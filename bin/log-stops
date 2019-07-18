@@ -1,0 +1,99 @@
+#!/bin/bash
+#
+# NAME
+#   log-stops - generate a list of stop coordinates from one or more log files.
+#
+# SYNOPSIS
+#   log-stops [-a] logfilespec...
+#   log-stops -h
+#
+# DESCRIPTION
+#   logfilespec is a log file specifier of one of three types:
+#
+#   YYYY selects all the log files for the specified year;
+#   YYYYMM selects all the log files for the specified month;
+#   YYYYMMDD selects the log file for the specified day.
+#
+#   The selected log files are concatenated and filtered to extract position
+#   coordinates which identify a stop.  The first entry in a log file is
+#   assumed to be the overnight position and is taken as the first stop.
+#   Subsequent stops are identified as the last position recorded before an
+#   ENGINE State 0 (i.e. engine off) log entry.
+#
+#   If the -a option is absent, then only the last subsequent stop (if any) is
+#   issued otherwise all subsequent stops are issued.
+#
+#   The script outputs records of the form:
+#
+#   { "latitude": lat, "longitude": lng, "date": "YYYY-MM-DDThh:mm:ssZ" }
+#
+# AUTHOR
+#   Paul Reeve <preeve@pdjr.eu>
+
+source log.defs
+
+OPT_ALLSTOPS=
+FILESPECS=
+
+while [ "${1}" != "" ] ; do
+    case ${1} in
+        -a)
+            OPT_ALLSTOPS="yes"
+            ;;
+        -h)
+            ${GREP} '^#' ${0}
+            exit 0
+            ;;
+        *)
+            FILESPEC=${1}
+            while [ ${#FILESPEC} -lt 8 ] ; do FILESPEC=${FILESPEC}'?' ; done
+            FILESPECS="${FILESPECS} ${LOGDIR}${FILESPEC}"
+            ;;
+    esac
+    shift
+done
+
+if [ "${FILESPECS}" == "" ] ; then
+    echo "usage: log-stops [-a] logfilespec..."
+    echo "usage: log-stops -h"
+    exit 1
+fi
+    
+ALLSTOPS=
+for FILENAME in ${FILESPECS} ; do
+    POSITIONS=$(${LOGPOSITIONS} $(${BASENAME} ${FILENAME}))
+    POSITIONCOUNT=$(${GREP} -c '^' <<< "${POSITIONS}")
+    STARTPOS=$(${LOGPOSITIONS} $(${BASENAME} ${FILENAME}) | ${HEAD} -1)
+    STOPS=$(${GREP} -h 'POSITION\|ENGINE' ${FILENAME} \
+          | ${GREP} -B1 'ENGINE' \
+          | ${GREP} '{' \
+          | ${AWK} '{ print $5,$6,$7,$8,$9",","\"date\":","\""$1"\"",$10 }')
+    STOPCOUNT=$(${GREP} -c '^' <<< "${STOPS}")
+
+    if [ ${POSITIONCOUNT} -gt 1 ] ; then
+        latitude=$(${JQ} -j '.latitude' <<< "${STARTPOS}")
+        longitude=$(${JQ} -j '.longitude' <<< "${STARTPOS}")
+        date=$(${HEAD} -2 <<< "${POSITIONS}" | ${TAIL} -1 | ${JQ} -j '.date');
+        STARTPOS="{ \"latitude\": ${latitude}, \"longitude\": ${longitude}, \"date\": \"${date}\" }"
+    fi
+
+    COUNT=1
+    while read -r value ; do 
+        case ${COUNT} in
+            1)
+                ALLSTOPS="${ALLSTOPS}"${STARTPOS}$'\n'
+                ;;
+            ${STOPCOUNT})
+                ALLSTOPS="${ALLSTOPS}"${value}$'\n'
+                ;;
+            *)
+                if [ "${OPT_ALLSTOPS}" == "yes" ] ; then
+                    ALLSTOPS="${ALLSTOPS}"${value}$'\n'
+                fi
+                ;;
+        esac
+        COUNT=$(( COUNT + 1 ))
+    done <<< "${STOPS}"
+done
+
+echo "$(${UNIQ} <<< "${ALLSTOPS}")"

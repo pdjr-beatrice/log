@@ -1,0 +1,35 @@
+#!/bin/bash
+
+source log.defs
+
+if [ "${1}" == "" ] ; then
+    echo "usage: log-atrest [ -v ] logfile"
+    exit 10
+fi
+
+VERBOSE="no"
+if [ "${1}" == "-v" ] ; then VERBOSE="yes" ; shift ; fi
+TODAY=${1}
+TODAYFILE=${LOGDIR}${TODAY}
+
+if [ ! -f "${TODAYFILE}" ] ; then
+    echo "log-atrest: bad or missing logfile '${TODAYFILE}'"
+    exit 11
+fi
+
+RETVAL="no"
+TODAYSPOSITIONS="$(${GREP} 'POSITION' ${TODAYFILE} | ${CUT} -d ' ' -f5-)"
+TODAYSPOSITIONCOUNT=$(${GREP} -c '^' <<< "${TODAYSPOSITIONS}")
+if [ "${TODAYSPOSITIONCOUNT}" -eq "1" ] ; then
+    YESTERDAY=$(${DATE} -d "${TODAY} 1 day ago 13:00" '+%Y%m%d')
+    YESTERDAYFILE=${LOGDIR}${YESTERDAY}
+    if [ -f "${YESTERDAYFILE}" ] ; then
+        YESTERDAYSFINALPOSITION="$(${GREP} 'POSITION' ${YESTERDAYFILE} | ${TAIL} -1 | ${CUT} -d ' ' -f5-)"
+        if [ "${TODAYSPOSITIONS}" == "${YESTERDAYSFINALPOSITION}" ] ; then
+            RETVAL="yes"
+        fi
+    fi
+fi
+if [ "${VERBOSE}" == "yes" ] ; then echo ${RETVAL} ; fi
+EXIT=0; if [ ${RETVAL} == "no" ] ; then EXIT=1 ; fi
+exit ${EXIT}

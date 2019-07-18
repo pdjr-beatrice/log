@@ -1,0 +1,204 @@
+#!/bin/bash
+#
+# NAME
+#   log-kml - generate KML rendering of one or more log files.
+#
+# SYNOPSIS
+#   log-kml [-a] logfilespec...
+#   log-kml -h
+#
+# DESCRIPTION
+#   logfilespec is a log file specifier of one of three types:
+#
+#   YYYY selects all the log files for the specified year;
+#   YYYYMM selects all the log files for the specified month;
+#   YYYYMMDD selects the log file for the specified day.
+#
+#   log-kml renders the selected log files as a KML document suitable for
+#   overlaying on a map.  For each selected file, a KML Folder entity is
+#   generated containing one or more Placemark entities defining markers which
+#   indicate stops made during the day (see log-stops(1)) and a single
+#   Placemark entity defining a line string which depicts the track of the
+#   vessel (see log-positions(1)).
+#
+#   If the -a switch is given, then it is passed to log-stops(1) and will thus
+#   influence the granularity of stop rendering.
+#
+# AUTHOR
+#   Paul Reeve <preeve@pdjr.eu>
+
+source log.defs
+
+
+OPT_ALLSTOPS=
+FILESPECS=
+
+while [ "${1}" != "" ] ; do
+    case ${1} in
+        -a)
+            OPT_ALLSTOPS="-a"
+            ;;
+        -h)
+            ${GREP} '^#' ${0}
+            exit 0
+            ;;
+        *) 
+            FILESPEC=${1}
+            while [ ${#FILESPEC} -lt 8 ] ; do FILESPEC=${FILESPEC}'?' ; done
+            FILESPECS="${FILESPECS} ${LOGDIR}${FILESPEC}"
+            ;;
+    esac
+    shift
+done
+
+if [ "${FILESPECS}" == "" ] ; then
+    echo -e "usage: log-kml [-a] filespec..."
+    exit 1
+fi
+
+echo '<?xml version="1.0" encoding="UTF-8"?>'
+echo '<kml xmlns="http://www.opengis.net/kml/2.2">'
+echo '<Document>'
+echo '  <Style id="linestyle">'
+echo '    <LineStyle>'
+echo '      <color>7fff0000</color>'
+echo '      <width>4</width>'
+echo '    </LineStyle>'
+echo '  </Style>'
+echo '  <Style id="startmarker">'
+echo '    <IconStyle>'        
+echo '      <color>7f00ff00</color>'
+echo '      <Icon>'
+echo '        <href>/beatrice/icons/marker-stroked-15.svg</href>'
+echo '      </Icon>'
+echo '      <hotSpot x="7" y="0" xunits="pixels" yunits="pixels"/>'
+echo '    </IconStyle>'
+echo '  </Style>'
+echo '  <Style id="stopmarker">'
+echo '    <IconStyle>'        
+echo '      <color>7f00ff00</color>'
+echo '      <Icon>'
+echo '        <href>/beatrice/icons/marker-15.svg</href>'
+echo '      </Icon>'
+echo '      <hotSpot x="7" y="0" xunits="pixels" yunits="pixels"/>'
+echo '    </IconStyle>'
+echo '  </Style>'
+echo '  <Style id="haltmarker">'
+echo '    <IconStyle>'        
+echo '      <color>7f00ff00</color>'
+echo '      <Icon>'
+echo '        <href>/beatrice/icons/marker-stroked-11.svg</href>'
+echo '      </Icon>'
+echo '      <hotSpot x="5" y="0" xunits="pixels" yunits="pixels"/>'
+echo '    </IconStyle>'
+echo '  </Style>'
+echo '  <Style id="mooredmarker">'
+echo '    <IconStyle>'        
+echo '      <color>7f00ff00</color>'
+echo '      <Icon>'
+echo '        <href>/beatrice/icons/harbor-15.svg</href>'
+echo '      </Icon>'
+echo '      <hotSpot x="7" y="7" xunits="pixels" yunits="pixels"/>'
+echo '    </IconStyle>'
+echo '  </Style>'
+
+arr=(${FILESPECS})
+FILECOUNT=${#arr[@]}
+FCOUNT=1
+for FILENAME in ${FILESPECS} ; do
+    LOGFILE=$(${BASENAME} ${FILENAME})
+    echo '  <Folder id="'${LOGFILE}'">'
+
+    STOPS=$(${LOGSTOPS} ${OPT_ALLSTOPS} ${LOGFILE})
+    STOPCOUNT=$(${GREP} -c '^' <<< "${STOPS}")
+
+    if [ ${STOPCOUNT} -gt 0 ] ; then
+        COUNT=1
+        while read -r value ; do
+            lonlat=$(echo ${value} | ${JQ} -j '.longitude,",",.latitude')
+            date=$(echo ${value} | ${JQ} -j '.date')
+            case ${COUNT} in
+                1)
+                    if [ "${STOPCOUNT}" == "1" ] ; then 
+                        marker="#stopmarker"
+                    else
+                        marker="#startmarker"
+                    fi
+                    echo '    <Placemark>'
+                    echo "      <name>${date}</name>"
+                    echo '      <description>'
+                    echo '        <![CDATA['
+                    echo '        ]]>'
+                    echo '      </description>'
+                    echo "      <styleUrl>${marker}</styleUrl>"
+                    echo '      <Point>'
+                    echo '        <coordinates>'
+                    echo "          ${lonlat},0"
+                    echo '        </coordinates>'
+                    echo '      </Point>'
+                    echo '    </Placemark>'
+                    ;;
+                ${STOPCOUNT})
+                    marker="#stopmarker"
+                    echo '    <Placemark>'
+                    echo "      <name>${date}</name>"
+                    echo '      <description>'
+                    echo '        <![CDATA['
+                    echo '        ]]>'
+                    echo '      </description>'
+                    echo "      <styleUrl>${marker}</styleUrl>"
+                    echo '      <Point>'
+                    echo '        <coordinates>'
+                    echo "          ${lonlat},0"
+                    echo '        </coordinates>'
+                    echo '      </Point>'
+                    echo '    </Placemark>'
+                    ;;
+                *)
+                    marker="#haltmarker"
+                    echo '    <Placemark>'
+                    echo "      <name>${date}</name>"
+                    echo '      <description>'
+                    echo '        <![CDATA['
+                    echo '        ]]>'
+                    echo '      </description>'
+                    echo "      <styleUrl>${marker}</styleUrl>"
+                    echo '      <Point>'
+                    echo '        <coordinates>'
+                    echo "          ${lonlat},0"
+                    echo '        </coordinates>'
+                    echo '      </Point>'
+                    echo '    </Placemark>'
+                    ;;
+            esac
+            COUNT=$((COUNT + 1))
+        done <<< "${STOPS}"
+    fi
+
+    POSITIONS=$(${LOGPOSITIONS} ${LOGFILE})
+    POSITIONCOUNT=$(${GREP} -c '^' <<< "${POSITIONS}")
+    DISTANCE=$(${LOGTRIP} ${LOGFILE})
+    HOURS=$(${LOGRUNTIME} ${LOGFILE})
+    if [ ${POSITIONCOUNT} -gt 1 ] ; then
+        echo '    <Placemark>'
+        echo "      <name>${DISTANCE}km (${HOURS}h)</name>"
+        echo '      <styleUrl>#linestyle</styleUrl>'
+        echo '      <LineString>'
+        echo '        <coordinates>'
+    
+        while read -r value; do
+            lonlat=$(echo ${value} | ${JQ} -j '.longitude,",",.latitude')
+            echo "          ${lonlat},0"
+        done <<< "${POSITIONS}"
+
+        echo '        </coordinates>'
+        echo '      </LineString>'
+        echo '    </Placemark>'
+    fi 
+
+    echo "  </Folder>"
+    FCOUNT=$((FCOUNT + 1))
+done
+
+echo '</Document>'
+echo '</kml>'

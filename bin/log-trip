@@ -1,0 +1,13 @@
+#!/bin/bash
+
+source log.defs
+
+if [ "${1}" == "" ] ; then
+    echo -e "usage: log-trip logfile\n"
+    exit 1
+fi
+
+LOGFILE=${1} ; while [ ${#LOGFILE} -lt 8 ] ; do LOGFILE=${LOGFILE}'?' ; done
+LOGPATHNAME=${LOGDIR}${LOGFILE}
+
+echo "$(${CAT} ${LOGPATHNAME} | ${GREP} 'POSITION' | ${CUT} -d ' ' -f5- | ${PYTHON} ${LOGTRIPSCRIPT} )"
