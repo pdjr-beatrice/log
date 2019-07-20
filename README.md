@@ -16,15 +16,16 @@ A cloud based Wordpress blog installation uses the Wordpress Postie plugin to re
 
 The Wordpress installation which supports publishing of _Beatrice_'s blog relies on the
 [Postie](https://wordpress.org/plugins/postie/)
-plugin and, optionally, on the
+plugin and, for rendering of vessel postion on a map, the
 [OSM](https://wordpress.org/plugins/osm/)
 plugin.  
 
-
 Wordpress must be configured to allow all types of file upload by setting `define('ALLOW_UNFILTERED_UPLOADS', true);` in the installation's `wp-config.php` file. Additionally, a user with administrator priveleges must be identified as the Postie user.
 
-Postie must be configured to process messages in the email the account to which the log system publishes and to post the received email as the identified Wordpress user.  The Postie option which requires user login must be set to 'yes' and that which defines the received email format must be set to 'text'.
+Postie must be configured to process messages in the email the account to which the log system publishes and to post the received email as the identified Wordpress user.  The Postie option which requires user login must be set to 'yes' and that which defines the format of received email set to 'text'.
 
-OSM requires no special configuration.
+At this stage, log system messages should appear as blog posts which display operational data and include a link to the KML attachment describing vessel movement.
 
-If no further action is taken 
+To render the KML attachment as a map, the log system __postie-kml-plugin.php__ must be copied into the `wp-content/mu-plugins/` folder.  OSM requires no special configuration.
+
+The __postie-kml-plugin.php__ script works by replacing the KML attachment link in an email generated blog post with a Wordpress short-code which triggers the OSM plugin.
