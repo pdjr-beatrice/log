@@ -1,5 +1,6 @@
 # log - ship log system and integrated blog
-This collection of scripts implements a system for maintaining, manipulating and publishing a simple ship's log using data derived from a Signal K Node Server.  A reference implementation of the log system executes on the vessel 'Beatrice of Hull' and log files are published daily by email to the ship's Wordpress blog
+This collection of scripts implements a system for maintaining, manipulating and publishing a simple ship's log using data derived from a
+[http://www.signalk.org](Signal K) Node Server.  A reference implementation of the log system executes on the vessel 'Beatrice of Hull' and log files are published daily by email to the ship's Wordpress blog
 
 The log system core implementation consists of a single bash(1) script responsible for creating and updating daily log files and a number of other scripts designed to interrogate these log files, render the contained data in a range of formats and distribute rendered content via email.  These scripts can, in principle, execute on any machine which has websocket access to the Signal K server(s) which supply the raw log data, but Beatrice's log system simply runs on the ship's Signal K server host.
 
