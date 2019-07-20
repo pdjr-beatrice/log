@@ -72,7 +72,11 @@ The `log-update` script will only write values returned from the Signal K server
 
 ## Extracting and processing log file data
 
+All of the log file extraction scripts have the general syntax "_script_ [_option..._] _file-selector..._" where the _file-selector_ argument is a full or partial log file name of the form _YYYYMMDD_, _YYYYMM_ or _YYYY_, selecting a daily log file, all log files for a month or all log files for a year respectively.
+
 ### log-positions - get the positions through which the vessel passed in a particular period
+
+This script returns a list of position values from the selected log file(s).  For each log file the script will always return at least the first recorded position and otherwise will only return positions which were recorded.
 ### log-stops - get the start, stop and halt positions for a particular period
 ### log-trip - get the distance travelled in a particular period
 ### log-runtime - get the total runtime of some device in a particular period
