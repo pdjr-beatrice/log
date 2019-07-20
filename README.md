@@ -14,10 +14,10 @@ A cloud-based Wordpress blog installation uses the Wordpress _Postie_ plugin to 
 
 ## Log files and log system configuration
 
-A log file is a plain text file consisting of an arbitrary number of leg entries or records.
-Log files are rolled over at 00:00Z and all files have a name of the form "YYYYMMDD" which represents the date to which their content applies.
+A log file is a plain text file consisting of an arbitrary number of log entries or records.
+Log files are rolled over at 00:00Z and all files have a name of the form _YYYYMMDD_ which represents the date to which their content applies.
 
-Each line in a log file is made up of a timestamped and labelled record which stores a single Signal K data value.
+Each line in a log file is made up of a time-stamped and labelled record which stores a single Signal K data value.
 Fields in each record are space separated and the general format is "_log-timestamp_ [_signalk-timestamp_] _label-1_ _label-1.1_ _value_".
 A snippet from one of _Beatrice_'s recent log files looks like this.
 ```
@@ -27,8 +27,9 @@ A snippet from one of _Beatrice_'s recent log files looks like this.
 2019-07-13T22:00:01Z [2019-07-13T22:00:02.062Z] ENGINE State 0
 2019-07-13T22:00:01Z [2019-07-13T22:00:02.062Z] GENERATOR State 0
 ```
-
-# Wordpress configuration
+Exactly what data is written to a log and at what frequency is determined by a log configuration file.
+The configuration file consists of a prefix, body and suffix blocks, separated from one another by a blank lineeach consisting of one or more data definition lines and each separ
+## Wordpress configuration
 
 The Wordpress installation which supports publishing of _Beatrice_'s blog relies on the
 [Postie](https://wordpress.org/plugins/postie/)
