@@ -23,12 +23,61 @@ A snippet from one of _Beatrice_'s recent log files looks like this.
 ```
 2019-07-13T22:00:01Z [2019-07-13T22:00:01.293Z] TANKLEVEL FuelPS .3811
 2019-07-13T22:00:01Z [2019-07-13T22:00:01.678Z] TANKLEVEL FuelSB .4134
+2019-07-13T22:00:01Z [2019-07-13T22:00:01.778Z] BATTERYSTATE Domestic .9223
 2019-07-13T22:00:01Z [2019-07-13T22:00:02.318Z] POSITION Position { "latitude": 52.4031, "longitude": 5.6222 }
 2019-07-13T22:00:01Z [2019-07-13T22:00:02.062Z] ENGINE State 0
 2019-07-13T22:00:01Z [2019-07-13T22:00:02.062Z] GENERATOR State 0
 ```
 Exactly what data is written to a log and at what frequency is determined by a log configuration file.
-The configuration file consists of a prefix, body and suffix blocks, separated from one another by a blank lineeach consisting of one or more data definition lines and each separ
+The configuration file consists of a prefix, body and suffix blocks separated by blank lines.
+The prefix and suffix blocks respectively determine what data will be written at the start and end of a day (i.e. immediately a log file is created and immediately before it is closed.
+The body block determines what data will be written each time the `log-update`a script is executed.
+
+Each record in a configuration block is formatted as "_label-1_ _label-1.1_ _url_" where _url_ gives the path to the Signal K data value that should be stored in the log.
+_Beatrice_'s configuration file looks like this.
+```
+TANKLEVEL Wastewater http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/wasteWater/0/currentLevel
+TANKLEVEL FreshwaterPS http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/freshWater/1/currentLevel
+TANKLEVEL FreshwaterSB http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/freshWater/2/currentLevel
+TANKLEVEL FuelPS http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/fuel/3/currentLevel
+TANKLEVEL FuelSB http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/fuel/4/currentLevel
+BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/batteries/258/capacity/stateOfCharge
+POSITION Position http://192.168.1.1:3000/signalk/v1/api/vessels/self/navigation/position
+
+ENGINE State http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/switches/16/16/state
+  POSITION Position http://192.168.1.1:3000/signalk/v1/api/vessels/self/navigation/position
+GENERATOR State http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/switches/16/14/state
+
+TANKLEVEL Wastewater http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/wasteWater/0/currentLevel
+TANKLEVEL FreshwaterPS http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/freshWater/1/currentLevel
+TANKLEVEL FreshwaterSB http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/freshWater/2/currentLevel
+TANKLEVEL FuelPS http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/fuel/3/currentLevel
+TANKLEVEL FuelSB http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/fuel/4/currentLevel
+BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/batteries/258/capacity/stateOfCharge
+```
+The relationship between configuration file and log file content should be mostly self evident.
+Indented lines are only processed if execution of the immediately preceeding non-indented enquiry returns a _truthy_ value: thus, in the configuration presented above, if the "ENGINE State" enquiry returns the value "1" (saying engine running), then the indented "POSITION Position" enquiry will be processed.
+
+## Using `log-update` to maintain the log
+
+The `log-update` script is exclusively responsible for updating log files by executing the Signal K enquiries identified in the log configuration file and saving the results to the current log file.
+
+Executing the command `log-update close` causes the enquiries in the configuration file suffix block to be executed before the current day's log file is closed.
+A new log file is immediately created, named for the subsequent day, and the enquiries in the configuration file prefix block are executed.
+This only makes real sense if this execution happens at or around midnight and on _Beatrice_ a `cron` file executes `log-update close` at 23:59.
+
+Executing the command `log-update` (with no arguments) causes the script to immediately process the configuration body block.
+If the log system is being used to record vessel movements, then the frequency of script execution will determine the resolution of the implied track and on _Beatrice_ a `cron` file executes `log-update` once a minute.
+The `log-update` script will only write values returned from the Signal K server to the log file if they differ from the most recent previously logged value.
+
+## Extracting and processing log file data
+
+### log-positions - get the positions through which the vessel passed in a particular period
+### log-stops - get the start, stop and halt positions for a particular period
+### log-trip - get the distance travelled in a particular period
+### log-runtime - get the total runtime of some device in a particular period
+
+
 ## Wordpress configuration
 
 The Wordpress installation which supports publishing of _Beatrice_'s blog relies on the
