@@ -12,6 +12,22 @@ _Beatrice_'s log system simply runs on the ship's Signal K server host with scri
 At the end of each day, _Beatrice_ publishes the day's log to an unattended email account. The substantive content of the published material is a table of operating data and a KML attachment which represents the ship's passage over the preceeding 24 hours.
 A cloud-based Wordpress blog installation uses the Wordpress _Postie_ plugin to retrieve the published email and a simple filter script written in PHP is used by _Postie_ to interpolate an _Open Sea Map_ rendering of the KML document into a new blog page.
 
+## Log files and log system configuration
+
+A log file is a plain text file consisting of an arbitrary number of leg entries or records.
+Log files are rolled over at 00:00Z and all files have a name of the form "YYYYMMDD" which represents the date to which their content applies.
+
+Each line in a log file is made up of a timestamped and labelled record which stores a single Signal K data value.
+Fields in each record are space separated and the general format is "_log-timestamp_ [_signalk-timestamp_] _label-1_ _label-1.1_ _value_".
+A snippet from one of _Beatrice_'s recent log files looks like this.
+```
+2019-07-13T22:00:01Z [2019-07-13T22:00:01.293Z] TANKLEVEL FuelPS .3811
+2019-07-13T22:00:01Z [2019-07-13T22:00:01.678Z] TANKLEVEL FuelSB .4134
+2019-07-13T22:00:01Z [2019-07-13T22:00:02.318Z] POSITION Position { "latitude": 52.4031, "longitude": 5.6222 }
+2019-07-13T22:00:01Z [2019-07-13T22:00:02.062Z] ENGINE State 0
+2019-07-13T22:00:01Z [2019-07-13T22:00:02.062Z] GENERATOR State 0
+```
+
 # Wordpress configuration
 
 The Wordpress installation which supports publishing of _Beatrice_'s blog relies on the
