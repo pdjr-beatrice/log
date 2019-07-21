@@ -72,7 +72,7 @@ CONFIG=$(${CAT} ${CONFIGFILE})
 if [ ! -f "${LOGPATHNAME}" ] ; then PARAGRAPH_NAMES="init ${PARAGRAPH_NAMES}" ; fi
 
 for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
-    RULES=$(${SED} -n "/\[${PARAGRAPH_NAME}\]/,/^$/p" <<< ${CONFIG} | ${SED} '1d;$d')
+    RULES=$(${SED} -n "/\[${PARAGRAPH_NAME}\]/,/^$/p" <<< "${CONFIG}" | ${SED} '1d;$d')
 
     LASTTOPLEVELVALUE="ADUMMYVALUE"
     while read -r TOKEN LABEL SIGNALKPATH; do
