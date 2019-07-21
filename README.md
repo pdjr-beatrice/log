@@ -62,12 +62,12 @@ The '>' character at the beginning of a line identifies a conditional enquiry wh
 
 ## Log system scripts
 
-All log system scripts take a __-h__ option which displays the script's manual page: the following accounts are descriptive not comprehensive.  
+All log system scripts take a __-h__ option which displays the script's comprehensive manual page: the following descriptions do not address all available options.  
 
 ## Using `log-update` to maintain the log
 
 The `log-update` script is exclusively responsible for updating daily log files by executing the Signal K enquiries identified in the log configuration file and will automatically create new log files conditioned by time in the current time zone.
-When a new log file is created, enquiries in the "INIT" paragraph are automatically executed.
+When a new log file is created, enquiries in any "INIT" paragraph are automatically executed.
 
 In normal use, the `log-update` script takes one or more paragraph names as its arguments and processes the selected enquiries into log entries and it usually makes sense to schedule execution of the script: indeed, if the system is being used to record vessel movements, then repetitive scheduling is required and the frequency of script execution will determine the resolution of the logged track.
 
@@ -84,13 +84,29 @@ On _Beatrice_ `log-update` is executed in response to the following `crontab` en
 
 All of the log file extraction and processing scripts take a _file-selector_ argument which is a full or partial log file name of the form _YYYYMMDD_, _YYYYMM_ or _YYYY_, selecting a daily log file, all log files for a month or all log files for a year respectively.
 
-### log-positions - get the positions through which the vessel passed in a particular period
+### log-positions - get the positions through which the vessel passed
 
-This script returns a list of position values from the selected log file(s).  For each log file the script will always return at least the first recorded position and otherwise will only return positions which were recorded.
-### log-stops - get the start, stop and halt positions for a particular period
-### log-trip - get the distance travelled in a particular period
-### log-runtime - get the total runtime of some device in a particular period
+Returns a list of position values from the selected log file(s).
+The generated output is a list of JSON records with latitude, longitude and date fields.
 
+### log-stops - get the start, stop and halt positions
+
+Returns a list of stop and (optionally) halt positions from the selected log file(s).
+The generated output is a list in the same format as that produced by `log-positions`.
+
+### log-trip - get the distance travelled
+
+Uses the Haversine formula to compute the distance between the positions returned by `log-positions` and returns the sum of the computed values.
+
+### log-runtime - get the total runtime of some device
+
+Returns the total runtime _HH_:_MM_ for some device by filtering the selected log files using a supplied token and then summing the intervals between State 1 and State 0 log entries. 
+
+### log-tabulate - returns an HTML table depicting the start and finish values for some metrics
+
+### log-kml - returns a KML document representing position and stop data
+
+### log-email - email the output of `log-tabulate` and `log-kml` to some recipient
 
 ## Wordpress configuration
 
@@ -109,7 +125,4 @@ At this stage, log system messages will appear as blog posts which display opera
 To render the KML attachment as a map, the log system __postie-kml-plugin.php__ must be copied into the `wp-content/mu-plugins/` folder.  OSM requires no special configuration.
 
 The __postie-kml-plugin.php__ script works by replacing the KML attachment link in an email generated blog post with a Wordpress short-code which triggers the OSM plugin.
-
-# Log system configuration
-
 
