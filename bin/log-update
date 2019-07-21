@@ -1,11 +1,25 @@
+#!/bin/bash
+#
+# NAME
+#   log-update - update current log file
+#
+# SYNOPSIS
+#   log-update [-c config-file] [-d log-directory] close
+#   log-update [-c config-file] [-d log-directory]
+#   log-update -h
+#
+# DESCRIPTION
+#
+
 source log.defs
 
 CONFIGFILE=""
 for name in /etc/log.cfg /usr/local/etc/log.cfg ./log.cfg ; do
-    if [ -f "${name}" ] ; then CONFIGFILE="/usr/local/etc/log.cfg" ; fi
+    if [ -f "${name}" ] ; then CONFIGFILE=${name} ; fi
 done
 LOGDIR=${LOGDIR}
-CLOSE="no"
+FORCE=
+PARAGRAPH_NAMES=
 
 while [ "${1}" != "" ] ; do
     case ${1} in
@@ -17,15 +31,15 @@ while [ "${1}" != "" ] ; do
             shift
             LOGDIR="${1}"
             ;;
+	-f) # Force
+	    FORCE="yes"
+	    ;;
         -h) # Display usage message
-            echo "usage: log-update [-c configfile] [-d logdir] [close]"
-            echo "usage: log-update [-h]"
-            exit 0
+	    ${GREP} '^#' ${0}
+	    exit 0
             ;;
-        close | CLOSE) # We should process the occasional log rules
-            CLOSE="yes"
-            ;;
-        *)  
+        *)  # Paragraph name
+	    PARAGRAPH_NAMES="${PARAGRAPH_NAMES} ${1^^}"
             ;;
     esac
     shift
@@ -54,62 +68,32 @@ fi
 LOGFILE=$(${DATE} '+%Y%m%d')
 LOGPATHNAME=${LOGDIR}${LOGFILE}
 LOGDATE=$(${DATE} --utc +%FT%TZ)
-FREQUENTDEFS=$(${SED} -e '/^$/,$d' ${CONFIGFILE})
-OCCASIONALDEFS=$(${TAC} ${CONFIGFILE} | ${SED} -e '/^$/,$d;' | ${TAC})
-ALLDEFS=$(${GREP} -e '^[^$]' ${CONFIGFILE})
+CONFIG=$(${CAT} ${CONFIGFILE})
+if [ ! -f "${LOGPATHNAME}" ] ; then PARAGRAPH_NAMES="init ${PARAGRAPH_NAMES}" ; fi
 
-# If LOGFILE exists, then our job is to add just that information which it is
-# sensible to log every ; if LOGFILE doesn't exist, then it must
-# be the start of a new day and we should log everything.
-#
+for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
+    RULES=$(${SED} -n "/\[${PARAGRAPH_NAME}\]/,/^$/p" <<< ${CONFIG} | ${SED} '1d;$d')
 
-if [ -f "${LOGPATHNAME}" ] && [ "${CLOSE}" == "yes" ] ; then
+    LASTTOPLEVELVALUE="ADUMMYVALUE"
     while read -r TOKEN LABEL SIGNALKPATH; do
-        CURRENTVALUE=$(normalise "${TOKEN}" "$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.value' | tr -d '\012')")
-        TIMESTAMP=$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.timestamp' | tr -d '\012')
-        if [ "${CURRENTVALUE}" ] ; then
-            echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${LABEL} ${CURRENTVALUE}" >> ${LOGPATHNAME}
+    	CONDITION=
+	if [[ ${TOKEN} == \>* ]] ; then CONDITION="1" ; TOKEN=${TOKEN:1} ; fi
+	if [[ ( "${CONDITION}" == "" ) || (( "${CONDITION}" != "" ) && ( "${LASTTOPLEVELVALUE}" == "${CONDITION}" )) ]] ; then 
+        	SIGNALK_VALUE=$(normalise "${TOKEN}" "$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.value' | tr -d '\012')")
+        	TIMESTAMP=$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.timestamp' | tr -d '\012')
+		# If we have a value from Signal K, then do something...
+        	if [ "${SIGNALK_VALUE}" ] ; then
+			LASTLOGVALUE=
+			# Recover last logged value of this data item
+			if [ -f ${LOGPATHNAME} ] ; then
+            			LASTLOGVALUE=$(${GREP} "${TOKEN} ${LABEL}" "${LOGPATHNAME}" | ${TAIL} -1 | ${CUT} -d ' ' -f5-)
+			fi
+			# If there isn't a prior value, then just save this new one...
+            		if [ ! "${LASTLOGVALUE}" ] || [ "${FORCE}" ] || [ "${SIGNALK_VALUE}" != "${LASTLOGVALUE}" ] ; then
+                		echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${LABEL} ${SIGNALK_VALUE}" >> ${LOGPATHNAME}
+			fi
+            	fi
+		if [ "${CONDITION}" == "" ] ; then LASTTOPLEVELVALUE=${SIGNALK_VALUE} ; fi
         fi
-    done <<< "${OCCASIONALDEFS}"
-else
-    if [ ! -f "${LOGPATHNAME}" ] ; then
-	    while read -r TOKEN LABEL SIGNALKPATH; do
-            CURRENTVALUE=$(normalise "${TOKEN}" "$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.value' | tr -d '\012')")
-            TIMESTAMP=$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.timestamp' | tr -d '\012')
-            if [ "${CURRENTVALUE}" ] ; then
-                echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${LABEL} ${CURRENTVALUE}" >> ${LOGPATHNAME}
-            fi
-	    done <<< "${OCCASIONALDEFS}"
-    fi
-    while read -r TOKEN LABEL SIGNALKPATH; do
-        CURRENTVALUE=$(normalise "${TOKEN}" "$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.value' | tr -d '\012')")
-        TIMESTAMP=$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.timestamp' | tr -d '\012')
-        if [ "${CURRENTVALUE}" ] ; then
-            LASTLOGVALUE=$(${GREP} "${TOKEN}" "${LOGPATHNAME}" | ${TAIL} -1 | ${CUT} -d ' ' -f5-)
-            if [ ! "${LASTLOGVALUE}" ] ; then
-                echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${LABEL} ${CURRENTVALUE}" >> ${LOGPATHNAME}
-            else
-                ENGINESTATE=$(${GREP} "ENGINE State" "${LOGPATHNAME}" | ${TAIL} -1 | ${CUT} -d ' ' -f5-) ; if [ "${ENGINESTATE}" == "" ] ; then ENGINESTATE=0 ; fi
-                case ${TOKEN} in
-                    BATTERYSTATE | ENGINE | GENERATOR | TANKLEVEL)
-                        if [ "${CURRENTVALUE}" != "${LASTLOGVALUE}" ] ; then
-                            echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${LABEL} ${CURRENTVALUE}" >> ${LOGPATHNAME}
-                        fi
-                        ;;
-                    POSITION)
-                        places=$(( 3 + ${ENGINESTATE} ))
-                        flat=$(printf "%.${places}f" $(echo "${CURRENTVALUE}" | ${JQ} -j '.latitude'))
-                        flon=$(printf "%.${places}f" $(echo "${CURRENTVALUE}" | ${JQ} -j '.longitude'))
-                        slat=$(printf "%.${places}f" $(echo "${LASTLOGVALUE}" | ${JQ} -j '.latitude'))
-                        slon=$(printf "%.${places}f" $(echo "${LASTLOGVALUE}" | ${JQ} -j '.longitude'))
-                        if [ "${flat}" == "${slat}" ] && [ "${flon}" == "${slon}" ] ; then
-                            echo
-                        else
-                            echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${LABEL} ${CURRENTVALUE}" >> ${LOGPATHNAME}
-                        fi
-                        ;;
-                esac
-            fi
-        fi
-    done <<< "${FREQUENTDEFS}"
-fi
+    done <<< "${RULES}"
+done
