@@ -60,6 +60,10 @@ BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electr
 
 The '>' character at the beginning of a line identifies a conditional enquiry which will only be processed if the processing of the immediately preceeding non-conditional enquiry obtained a value of 1 from the Signal K server: thus, in the configuration presented above, if executing the "ENGINE State" enquiry returns the value "1" (saying engine running), then the ">POSITION Position" enquiry will be processed, otherwise it will be ignored, ensuring that position data is only logged if the vessel is moving.
 
+## Log system scripts
+
+All log system scripts take a __-h__ option which displays the script's manual page: the following accounts are descriptive not comprehensive.  
+
 ## Using `log-update` to maintain the log
 
 The `log-update` script is exclusively responsible for updating daily log files by executing the Signal K enquiries identified in the log configuration file and will automatically create new log files conditioned by time in the current time zone.
@@ -78,7 +82,7 @@ On _Beatrice_ `log-update` is executed in response to the following `crontab` en
 
 ## Extracting and processing log file data
 
-All of the log file extraction scripts have the general syntax "_script_ [_option..._] _file-selector..._" where the _file-selector_ argument is a full or partial log file name of the form _YYYYMMDD_, _YYYYMM_ or _YYYY_, selecting a daily log file, all log files for a month or all log files for a year respectively.
+All of the log file extraction and processing scripts take a _file-selector_ argument which is a full or partial log file name of the form _YYYYMMDD_, _YYYYMM_ or _YYYY_, selecting a daily log file, all log files for a month or all log files for a year respectively.
 
 ### log-positions - get the positions through which the vessel passed in a particular period
 
