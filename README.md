@@ -20,6 +20,7 @@ Log files are rolled over at 00:00Z and all files have a name of the form _YYYYM
 Each line in a log file is made up of a time-stamped and labelled record which stores a single Signal K data value.
 Fields in each record are space separated and the general format is "_log-timestamp_ [_signalk-timestamp_] _label-1_ _label-1.1_ _value_".
 A snippet from one of _Beatrice_'s recent log files looks like this.
+
 ```
 2019-07-13T22:00:01Z [2019-07-13T22:00:01.293Z] TANKLEVEL FuelPS .3811
 2019-07-13T22:00:01Z [2019-07-13T22:00:01.678Z] TANKLEVEL FuelSB .4134
@@ -28,14 +29,13 @@ A snippet from one of _Beatrice_'s recent log files looks like this.
 2019-07-13T22:00:01Z [2019-07-13T22:00:02.062Z] ENGINE State 0
 2019-07-13T22:00:01Z [2019-07-13T22:00:02.062Z] GENERATOR State 0
 ```
-Exactly what data is written to a log and at what frequency is determined by a log configuration file.
-The configuration file consists of a prefix, body and suffix blocks separated by blank lines.
-The prefix and suffix blocks respectively determine what data will be written at the start and end of a day (i.e. immediately a log file is created and immediately before it is closed.
-The body block determines what data will be written each time the `log-update`a script is executed.
 
-Each record in a configuration block is formatted as "_label-1_ _label-1.1_ _url_" where _url_ gives the path to the Signal K data value that should be stored in the log.
+Exactly what data is written to a log and at what frequency is determined by a log configuration file consists of a collection of _enquiries_ organised into named _paragraphs_.
+Each enquiry record is formatted as "_label-1_ _label-1.1_ _url_" where _url_ gives the path to the Signal K data value that should be stored in the log.
 _Beatrice_'s configuration file looks like this.
+
 ```
+[INIT]
 TANKLEVEL Wastewater http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/wasteWater/0/currentLevel
 TANKLEVEL FreshwaterPS http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/freshWater/1/currentLevel
 TANKLEVEL FreshwaterSB http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/freshWater/2/currentLevel
@@ -44,10 +44,12 @@ TANKLEVEL FuelSB http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/fuel/
 BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/batteries/258/capacity/stateOfCharge
 POSITION Position http://192.168.1.1:3000/signalk/v1/api/vessels/self/navigation/position
 
+[REALTIME]
 ENGINE State http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/switches/16/16/state
 >POSITION Position http://192.168.1.1:3000/signalk/v1/api/vessels/self/navigation/position
 GENERATOR State http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/switches/16/14/state
 
+[ONCLOSE]
 TANKLEVEL Wastewater http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/wasteWater/0/currentLevel
 TANKLEVEL FreshwaterPS http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/freshWater/1/currentLevel
 TANKLEVEL FreshwaterSB http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/freshWater/2/currentLevel
@@ -55,20 +57,24 @@ TANKLEVEL FuelPS http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/fuel/
 TANKLEVEL FuelSB http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/fuel/4/currentLevel
 BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/batteries/258/capacity/stateOfCharge
 ```
-The relationship between configuration file and log file content should be mostly self evident.
-The '>' character at the beginning of a line identifies a conditional enquiry which will only be processed if the execution of the immediately preceeding non-conditional enquiry returned a value of 1: thus, in the configuration presented above, if executing the "ENGINE State" enquiry returns the value "1" (saying engine running), then the ">POSITION Position" enquiry will be processed, otherwise it will be ignored, ensuring that position data is only logged if the vessel is moving.
+
+The '>' character at the beginning of a line identifies a conditional enquiry which will only be processed if the processing of the immediately preceeding non-conditional enquiry obtained a value of 1 from the Signal K server: thus, in the configuration presented above, if executing the "ENGINE State" enquiry returns the value "1" (saying engine running), then the ">POSITION Position" enquiry will be processed, otherwise it will be ignored, ensuring that position data is only logged if the vessel is moving.
 
 ## Using `log-update` to maintain the log
 
-The `log-update` script is exclusively responsible for updating log files by executing the Signal K enquiries identified in the log configuration file and saving the results to the current log file.
+The `log-update` script is exclusively responsible for updating daily log files by executing the Signal K enquiries identified in the log configuration file and will automatically create new log files conditioned by time in the current time zone.
+When a new log file is created, enquiries in the "INIT" paragraph are automatically executed.
 
-Executing the command `log-update suffix` causes the enquiries in the configuration file suffix block to be executed before the current day's log file is closed.
-A new log file is immediately created, named for the subsequent day, and the enquiries in the configuration file prefix block are executed.
-This only makes real sense if this execution happens at or around midnight and on _Beatrice_ a `cron` file executes `log-update close` at 23:59.
+In normal use, the `log-update` script takes one or more paragraph names as its arguments and processes the selected enquiries into log entries and it usually makes sense to schedule execution of the script: indeed, if the system is being used to record vessel movements, then repetitive scheduling is required and the frequency of script execution will determine the resolution of the logged track.
 
-Executing the command `log-update` (with no arguments) causes the script to immediately process the configuration body block.
-If the log system is being used to record vessel movements, then the frequency of script execution will determine the resolution of the implied track and on _Beatrice_ a `cron` file executes `log-update` once a minute.
 The `log-update` script will only write values returned from the Signal K server to the log file if they differ from the most recent previously logged value.
+
+On _Beatrice_ `log-update` is executed in response to the following `crontab` entries:
+
+```
+*/1 * * * * root /usr/local/bin/log-update realtime  >/dev/null 2>/dev/null
+59 23 * * * root /usr/local/bin/log-update onclose  >/dev/null 2>/dev/null
+```
 
 ## Extracting and processing log file data
 
