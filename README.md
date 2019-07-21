@@ -45,7 +45,7 @@ BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electr
 POSITION Position http://192.168.1.1:3000/signalk/v1/api/vessels/self/navigation/position
 
 ENGINE State http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/switches/16/16/state
-  POSITION Position http://192.168.1.1:3000/signalk/v1/api/vessels/self/navigation/position
+>POSITION Position http://192.168.1.1:3000/signalk/v1/api/vessels/self/navigation/position
 GENERATOR State http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/switches/16/14/state
 
 TANKLEVEL Wastewater http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/wasteWater/0/currentLevel
@@ -56,13 +56,13 @@ TANKLEVEL FuelSB http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/fuel/
 BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/batteries/258/capacity/stateOfCharge
 ```
 The relationship between configuration file and log file content should be mostly self evident.
-Indented lines are only processed if execution of the immediately preceeding non-indented enquiry returns a _truthy_ value: thus, in the configuration presented above, if the "ENGINE State" enquiry returns the value "1" (saying engine running), then the indented "POSITION Position" enquiry will be processed.
+The '>' character at the beginning of a line identifies a conditional enquiry which will only be processed if the execution of the immediately preceeding non-conditional enquiry returned a value of 1: thus, in the configuration presented above, if executing the "ENGINE State" enquiry returns the value "1" (saying engine running), then the ">POSITION Position" enquiry will be processed, otherwise it will be ignored, ensuring that position data is only logged if the vessel is moving.
 
 ## Using `log-update` to maintain the log
 
 The `log-update` script is exclusively responsible for updating log files by executing the Signal K enquiries identified in the log configuration file and saving the results to the current log file.
 
-Executing the command `log-update close` causes the enquiries in the configuration file suffix block to be executed before the current day's log file is closed.
+Executing the command `log-update suffix` causes the enquiries in the configuration file suffix block to be executed before the current day's log file is closed.
 A new log file is immediately created, named for the subsequent day, and the enquiries in the configuration file prefix block are executed.
 This only makes real sense if this execution happens at or around midnight and on _Beatrice_ a `cron` file executes `log-update close` at 23:59.
 
