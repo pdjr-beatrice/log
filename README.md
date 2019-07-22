@@ -49,8 +49,8 @@ Each log entry has the general format.
 _timestamp_ __[___signalk-timestamp___]__ _label-1_ _label-1.1_ _value_
 
 Where _timestamp_ is the time the log entry was made; _signalk-timestamp_ is time
-Signal K associates with the data value; _label-1_ and _label-1.1_ are identifying
-labels for _value_ which is a Signal K data point.
+Signal K associates with _value_; _label-1_ and _label-1.1_ are identifying
+labels for _value_ which is the substantive Signal K data point.
 
 Exactly what data is written to a log file is determined by a log configuration file
 which consists of a collection of _enquiries_ organised into named _paragraphs_.
@@ -82,19 +82,25 @@ BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electr
 
 Each enquiry in the log configuration file has the general format:
 
-[__>__]_label-1_ _label-1.1_ _url_
+[__>__|__! ]_label-1_ _label-1.1_ _url_
 
 where _label-1_ and _label-1.1_ serve both a documentary and identification
 role and _url_ gives the path to the Signal K data value that should be stored
 in the log.
 
-The '>' character at the beginning of a line identifies a conditional enquiry
-which will only be processed if processing of the immediately preceeding
+The '>' character at the beginning of an enquiry identifies it as conditional
+and it will only be processed if processing of the immediately preceeding
 non-conditional enquiry obtained a value of 1 from the Signal K server.
 Thus, in the configuration presented above, if executing the "ENGINE State"
 enquiry returns the value "1" (saying engine running), then the ">POSITION
 Position" enquiry will be processed, otherwise it will be ignored, ensuring that
 position data is only logged if the vessel is moving.
+
+The '!' character at the beginning of an enquiry identifies it as non-recording
+meaning that it will be processed normally but the result will not be saved to
+the log.
+This behaviour can be used in combination with subsequent conditional enquiries
+to perform and invisible test. 
 
 ## Log system scripts
 
@@ -111,12 +117,12 @@ zone.
 When a new log file is created, enquiries in any "INIT" paragraph are
 automatically executed.
 
-In normal use, the `log-update` script takes one or more paragraph names as its
-arguments and processes the selected enquiries into log entries.
+In normal use, `log-update` takes one or more paragraph names as its
+argument(s) and processes the selected enquiries into log entries.
 It usually makes sense to schedule execution of the update script: indeed, if
-the system is being used to record vessel movements, then scheduling is
-mandatory and the frequency of script execution will determine the resolution
-of the logged track.
+the log system is being used to track vessel movements, then scheduling is
+pretty-much mandatory and the frequency of script execution will determine
+the resolution of the logged track.
 
 The `log-update` script will only write values returned from the Signal K server
 to the log file if they differ from the most recent previously logged value.
@@ -195,6 +201,7 @@ movement.
 To render the KML attachment as a map, __postie-kml-plugin.php__ must be copied
 into the `wp-content/mu-plugins/` folder.
 OSM requires no special configuration.
+
 The __postie-kml-plugin.php__ script works by replacing the KML attachment link
 in an email generated blog post with a Wordpress short-code which triggers the
 OSM plugin.
