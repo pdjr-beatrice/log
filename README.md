@@ -82,7 +82,7 @@ BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electr
 
 Each enquiry in the log configuration file has the general format:
 
-[__>__|__! ]_label-1_ _label-1.1_ _url_
+\[__>__|__!__\]_label-1_ _label-1.1_ _url_
 
 where _label-1_ and _label-1.1_ serve both a documentary and identification
 role and _url_ gives the path to the Signal K data value that should be stored
