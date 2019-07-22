@@ -46,7 +46,7 @@ A snippet from one of _Beatrice_'s recent log files looks like this:
 
 Each log entry has the general format.
 
-_timestamp_ __[___ _signalk-timestamp_____]__ _label-1_ _label-1.1_ _value_
+_timestamp_ __[___signalk-timestamp___]__ _label-1_ _label-1.1_ _value_
 
 Where _timestamp_ is the time the log entry was made; _signalk-timestamp_ is time
 Signal K associates with the data value; _label-1_ and _label-1.1_ are identifying
