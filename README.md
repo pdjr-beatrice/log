@@ -5,7 +5,7 @@ and publishing a simple ship's log using data derived from a
 [Signal K](http://www.signalk.org) Node Server.
 A reference implementation of the __log__ system executes on the vessel
 _Beatrice of Hull_ and log files are published daily by email to the ship's
-[Wordpress blog](http://www.pdjr.eu/).
+[blog](http://www.pdjr.eu/).
 
 The log system core implementation consists of a single bash(1) script
 responsible for creating and updating daily log files and a number of other
@@ -21,10 +21,13 @@ email account.
 The substantive content of the published material is a table of operating data
 and a KML attachment which represents the ship's passage over the preceeding 24
 hours.
-A cloud-based Wordpress blog installation uses the _Postie_ plugin to
-retrieve the published email and a simple filter script written in PHP is used
-by _Postie_ to interpolate an _Open Sea Map_ rendering of the KML document into
-a new blog page.
+A cloud-based
+[Wordpress](https://wordpress.org/)
+installation retrieves the published email and and publishes it as a new blog
+page.
+A simple filter script is used to interpolate an
+[Open Sea Map](https://www.openseamap.org/)
+rendering of the KML attachment into the published page.
 
 ## Log files and log system configuration
 
