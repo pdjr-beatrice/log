@@ -32,10 +32,7 @@ A log file is a plain text file consisting of an arbitrary number of log entries
 relating to a single day as defined by the local time zone.
 Log files have a name of the form _YYYYMMDD_.
 
-Each line in a log file is made up of a time-stamped and labelled record which
-stores a single Signal K data value.
-Fields in each record are space separated and the general format is
-`_log-timestamp_ [_signalk-timestamp_] _label-1_ _label-1.1_ _value_`.
+Each entry in a log file is just a time-stamped, labelled, Signal K data value. 
 A snippet from one of _Beatrice_'s recent log files looks like this:
 
 ```
@@ -47,14 +44,16 @@ A snippet from one of _Beatrice_'s recent log files looks like this:
 2019-07-13T22:00:01Z [2019-07-13T22:00:02.062Z] GENERATOR State 0
 ```
 
-Exactly what data is written to a log and at what frequency is determined by a
-log configuration file which consists of a collection of _enquiries_ organised
-into named _paragraphs_.
-Each enquiry is formatted as
+Each log entry has the general format.
 
-_label-1_ _label-1.1_ _url_
-wherewhere _url_
-gives the path to the Signal K data value that should be stored in the log.
+_timestamp_ __[___ _signalk-timestamp_____]__ _label-1_ _label-1.1_ _value_
+
+Where _timestamp_ is the time the log entry was made; _signalk-timestamp_ is time
+Signal K associates with the data value; _label-1_ and _label-1.1_ are identifying
+labels for _value_ which is a Signal K data point.
+
+Exactly what data is written to a log is determined by a log configuration file
+which consists of a collection of _enquiries_ organised into named _paragraphs_.
 _Beatrice_'s configuration file looks like this.
 
 ```
@@ -80,6 +79,12 @@ TANKLEVEL FuelPS http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/fuel/
 TANKLEVEL FuelSB http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/fuel/4/currentLevel
 BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/batteries/258/capacity/stateOfCharge
 ```
+
+Each enquiry is formatted as
+
+_label-1_ _label-1.1_ _url_
+wherewhere _url_
+gives the path to the Signal K data value that should be stored in the log.
 
 The '>' character at the beginning of a line identifies a conditional enquiry
 which will only be processed if processing of the immediately preceeding
