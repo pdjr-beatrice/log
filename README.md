@@ -16,14 +16,12 @@ access to port 80 on the Signal K server(s) supplying the raw log data.
 _Beatrice_'s log system simply runs on the ship's Signal K server host with
 script execution automated by the system scheduler.
 
-At the end of each day, _Beatrice_ publishes the day's log to an unattended
-email account.
-The substantive content of the published material is a table of operating data
-and a KML attachment which represents the ship's passage over the preceeding 24
-hours.
-A cloud-based
+At the end of each day, _Beatrice_ generates an email from the day's log which
+summarises operating data and includes a KML attachment representing the ship's
+passage over the preceeding 24 hours.
+The email is posted to a dedicated email account which is monitored by a cloud-based
 [Wordpress](https://wordpress.org/)
-installation retrieves the published email and and publishes it as a new blog
+installation that retrieves the published email and and publishes it as a new blog
 page.
 A simple filter script is used to interpolate an
 [Open Sea Map](https://www.openseamap.org/)
