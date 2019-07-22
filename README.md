@@ -21,7 +21,7 @@ email account.
 The substantive content of the published material is a table of operating data
 and a KML attachment which represents the ship's passage over the preceeding 24
 hours.
-A cloud-based Wordpress blog installation uses the Wordpress _Postie_ plugin to
+A cloud-based Wordpress blog installation uses the _Postie_ plugin to
 retrieve the published email and a simple filter script written in PHP is used
 by _Postie_ to interpolate an _Open Sea Map_ rendering of the KML document into
 a new blog page.
@@ -29,15 +29,14 @@ a new blog page.
 ## Log files and log system configuration
 
 A log file is a plain text file consisting of an arbitrary number of log entries
-or records.
-Log files are rolled over at 00:00Z and all files have a name of the form
-_YYYYMMDD_ which represents the date to which their content applies.
+relating to a single day as defined by the local time zone.
+Log files have a name of the form _YYYYMMDD_.
 
 Each line in a log file is made up of a time-stamped and labelled record which
 stores a single Signal K data value.
 Fields in each record are space separated and the general format is
 `_log-timestamp_ [_signalk-timestamp_] _label-1_ _label-1.1_ _value_`.
-A snippet from one of _Beatrice_'s recent log files looks like this.
+A snippet from one of _Beatrice_'s recent log files looks like this:
 
 ```
 2019-07-13T22:00:01Z [2019-07-13T22:00:01.293Z] TANKLEVEL FuelPS .3811
@@ -49,9 +48,12 @@ A snippet from one of _Beatrice_'s recent log files looks like this.
 ```
 
 Exactly what data is written to a log and at what frequency is determined by a
-log configuration file consists of a collection of _enquiries_ organised into
-named _paragraphs_.
-Each enquiry record is formatted as `_label-1_ _label-1.1_ _url_` where _url_
+log configuration file which consists of a collection of _enquiries_ organised
+into named _paragraphs_.
+Each enquiry is formatted as
+
+_label-1_ _label-1.1_ _url_
+wherewhere _url_
 gives the path to the Signal K data value that should be stored in the log.
 _Beatrice_'s configuration file looks like this.
 
