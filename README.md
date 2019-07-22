@@ -52,9 +52,9 @@ Where _timestamp_ is the time the log entry was made; _signalk-timestamp_ is tim
 Signal K associates with the data value; _label-1_ and _label-1.1_ are identifying
 labels for _value_ which is a Signal K data point.
 
-Exactly what data is written to a log is determined by a log configuration file
+Exactly what data is written to a log file is determined by a log configuration file
 which consists of a collection of _enquiries_ organised into named _paragraphs_.
-_Beatrice_'s configuration file looks like this.
+_Beatrice_'s log configuration file looks like this.
 
 ```
 [INIT]
@@ -80,16 +80,18 @@ TANKLEVEL FuelSB http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/fuel/
 BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/batteries/258/capacity/stateOfCharge
 ```
 
-Each enquiry is formatted as
+Each enquiry in the log configuration file has the general format:
 
-_label-1_ _label-1.1_ _url_
-wherewhere _url_
-gives the path to the Signal K data value that should be stored in the log.
+[__>__]_label-1_ _label-1.1_ _url_
+
+where _label-1_ and _label-1.1_ serve both a documentary and identification
+role and _url_ gives the path to the Signal K data value that should be stored
+in the log.
 
 The '>' character at the beginning of a line identifies a conditional enquiry
 which will only be processed if processing of the immediately preceeding
 non-conditional enquiry obtained a value of 1 from the Signal K server.
-Thus,in the configuration presented above, if executing the "ENGINE State"
+Thus, in the configuration presented above, if executing the "ENGINE State"
 enquiry returns the value "1" (saying engine running), then the ">POSITION
 Position" enquiry will be processed, otherwise it will be ignored, ensuring that
 position data is only logged if the vessel is moving.
