@@ -19,11 +19,11 @@ script execution automated by the system scheduler.
 At the end of each day, _Beatrice_ generates an email from the day's log which
 summarises operating data and includes a KML attachment representing the ship's
 passage over the preceeding 24 hours.
-The email is posted to a dedicated email account which is monitored by a cloud-based
+The email is posted to a dedicated email account from which it is subsequently
+retrieved by a cloud-based
 [Wordpress](https://wordpress.org/)
-installation that retrieves the published email and and publishes it as a new blog
-page.
-A simple filter script is used to interpolate an
+installation that publishes the email as a new blog page.
+A simple filter script is used by Wordpress to interpolate an
 [Open Sea Map](https://www.openseamap.org/)
 rendering of the KML attachment into the published page.
 
