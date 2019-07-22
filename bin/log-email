@@ -118,11 +118,9 @@ fi
 SUBJECT="${CATEGORY}: ${LOGDATESTRING} - ${START}${END}"
 BODY="date: ${PUBDATE}"$'\n'
 BODY="${BODY}tags: ${TAGS},${CATEGORY}"$'\n'
-BODY="${BODY}[aside]"$'\n'
 BODY="${BODY}<div class='${TAGS} ${CATEGORY}'>"$'\n'
 BODY="${BODY}$(${LOGTABULATE} ${LOGFILESPEC})"$'\n'
 BODY="${BODY}</div>"$'\n'
-BODY="${BODY}[/aside]"$'\n'
 if [ "${DEBUG}" == "yes" ] ; then
     echo "Subject: ${SUBJECT}"
     echo -e "${BODY}"
