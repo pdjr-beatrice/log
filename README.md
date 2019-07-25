@@ -143,10 +143,16 @@ argument which is a full or partial log file name of the form _YYYYMMDD_,
 _YYYYMM_ or _YYYY_, selecting a daily log file, all log files for a month or all
 log files for a year respectively.
 
-### log-get - return values from the log selecting records using a regular expression
+### log-get - return arbitrary values from the selected log
 
-Returns a list of values from the selected log file(s) after filtering
-records using a regular expression.
+
+__log-get__ [__-__{__f__|__l__}] [__-c__ _conversion_] _regex_ _file-selector..._
+
+
+__log-get__ is just a wrapper for grep(1) which appropriately expands log system
+_file-selector_ before applying _regex_.
+
+The script returns the selected list of values.
 
 ### log-positions - get the positions through which the vessel passed
 
