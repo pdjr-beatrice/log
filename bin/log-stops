@@ -4,7 +4,7 @@
 #   log-stops - generate a list of stop coordinates from one or more log files.
 #
 # SYNOPSIS
-#   log-stops [-a] logfilespec...
+#   log-stops [-{a|f|l}] -s logfilespec...
 #   log-stops -h
 #
 # DESCRIPTION
@@ -21,11 +21,16 @@
 #   ENGINE State 0 (i.e. engine off) log entry.
 #
 #   If the -a option is absent, then only the last subsequent stop (if any) is
-#   issued otherwise all subsequent stops are issued.
+#   issued otherwise all subsequent stops are issued. The -f and -l switches
+#   restrict output to just the first or just the last stop respectively.
 #
-#   The script outputs records of the form:
+#   Normally, the script outputs records of the form:
 #
 #   { "latitude": lat, "longitude": lng, "date": "YYYY-MM-DDThh:mm:ssZ" }
+#
+#   Use of the -s switch produces simpler records of the form:
+#
+#   latitude,longitude
 #
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
@@ -34,16 +39,27 @@ source log.defs
 
 OPT_ALLSTOPS=
 FILESPECS=
+RESTRICT=
+SIMPLE=
 
 while [ "${1}" != "" ] ; do
     case ${1} in
-        -a)
+        -a) # Return all stops
             OPT_ALLSTOPS="yes"
             ;;
+		-f) # Return first stop only
+			RESTRICT="first"
+			;;
         -h)
             ${GREP} '^#' ${0}
             exit 0
             ;;
+		-l) # Return last stop only
+			RESTRICT="last"
+			;;
+		-s) # Simple output format
+			SIMPLE="yes"
+			;;
         *)
             FILESPEC=${1}
             while [ ${#FILESPEC} -lt 8 ] ; do FILESPEC=${FILESPEC}'?' ; done
@@ -74,21 +90,21 @@ for FILENAME in ${FILESPECS} ; do
         latitude=$(${JQ} -j '.latitude' <<< "${STARTPOS}")
         longitude=$(${JQ} -j '.longitude' <<< "${STARTPOS}")
         date=$(${HEAD} -2 <<< "${POSITIONS}" | ${TAIL} -1 | ${JQ} -j '.date');
-        STARTPOS="{ \"latitude\": ${latitude}, \"longitude\": ${longitude}, \"date\": \"${date}\" }"
+       	STARTPOS="{ \"latitude\": ${latitude}, \"longitude\": ${longitude}, \"date\": \"${date}\" }"
     fi
 
     COUNT=1
     while read -r value ; do 
         case ${COUNT} in
             1)
-                ALLSTOPS="${ALLSTOPS}"${STARTPOS}$'\n'
+                ALLSTOPS="${ALLSTOPS}${STARTPOS}"$'\n'
                 ;;
             ${STOPCOUNT})
-                ALLSTOPS="${ALLSTOPS}"${value}$'\n'
+                ALLSTOPS="${ALLSTOPS}${value}"$'\n'
                 ;;
             *)
                 if [ "${OPT_ALLSTOPS}" == "yes" ] ; then
-                    ALLSTOPS="${ALLSTOPS}"${value}$'\n'
+                    ALLSTOPS="${ALLSTOPS}${value}"$'\n'
                 fi
                 ;;
         esac
@@ -96,4 +112,18 @@ for FILENAME in ${FILESPECS} ; do
     done <<< "${STOPS}"
 done
 
-echo "$(${UNIQ} <<< "${ALLSTOPS}")"
+if [ "${SIMPLE}" == "yes" ] ; then
+	ALLSTOPS=$(${PERL} -ne 'print "$1,$2\n" if /atitude": ([\d\.]+).*ongitude": ([\d\.]+)/' <<< "${ALLSTOPS}")$'\n' 
+fi
+
+case ${RESTRICT} in
+	first)
+		echo -n "${ALLSTOPS}" | ${HEAD} -1
+		;;
+	last)
+		echo -n "${ALLSTOPS}" | ${TAIL} -1
+		;;
+	*)
+		echo -n "${ALLSTOPS}"
+		;;
+esac

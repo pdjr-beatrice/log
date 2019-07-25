@@ -31,15 +31,15 @@ while [ "${1}" != "" ] ; do
             shift
             LOGDIR="${1}"
             ;;
-	-f) # Force
-	    FORCE="yes"
-	    ;;
+    	-f) # Force
+	        FORCE="yes"
+	        ;;
         -h) # Display usage message
-	    ${GREP} '^#' ${0}
-	    exit 0
+	        ${GREP} '^#' ${0}
+	        exit 0
             ;;
         *)  # Paragraph name
-	    PARAGRAPH_NAMES="${PARAGRAPH_NAMES} ${1^^}"
+	        PARAGRAPH_NAMES="${PARAGRAPH_NAMES} ${1^^}"
             ;;
     esac
     shift
@@ -72,28 +72,31 @@ CONFIG=$(${CAT} ${CONFIGFILE})
 if [ ! -f "${LOGPATHNAME}" ] ; then PARAGRAPH_NAMES="init ${PARAGRAPH_NAMES}" ; fi
 
 for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
+    echo "Processing ${PARAGRAPH_NAME}"
     RULES=$(${SED} -n "/\[${PARAGRAPH_NAME}\]/,/^$/p" <<< "${CONFIG}" | ${SED} '1d;$d')
+    echo "${RULES}"
 
     LASTTOPLEVELVALUE="ADUMMYVALUE"
     while read -r TOKEN LABEL SIGNALKPATH; do
+        echo "Processing ${TOKEN} ${LABEL} ${SIGNALKPATH}"
     	CONDITION=
-	if [[ ${TOKEN} == \>* ]] ; then CONDITION="1" ; TOKEN=${TOKEN:1} ; fi
-	if [[ ( "${CONDITION}" == "" ) || (( "${CONDITION}" != "" ) && ( "${LASTTOPLEVELVALUE}" == "${CONDITION}" )) ]] ; then 
+    	if [[ ${TOKEN} == \>* ]] ; then CONDITION="1" ; TOKEN=${TOKEN:1} ; fi
+	    if [[ ( "${CONDITION}" == "" ) || (( "${CONDITION}" != "" ) && ( "${LASTTOPLEVELVALUE}" == "${CONDITION}" )) ]] ; then 
         	SIGNALK_VALUE=$(normalise "${TOKEN}" "$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.value' | tr -d '\012')")
         	TIMESTAMP=$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.timestamp' | tr -d '\012')
-		# If we have a value from Signal K, then do something...
+		    # If we have a value from Signal K, then do something...
         	if [ "${SIGNALK_VALUE}" ] ; then
-			LASTLOGVALUE=
-			# Recover last logged value of this data item
-			if [ -f ${LOGPATHNAME} ] ; then
-            			LASTLOGVALUE=$(${GREP} "${TOKEN} ${LABEL}" "${LOGPATHNAME}" | ${TAIL} -1 | ${CUT} -d ' ' -f5-)
-			fi
-			# If there isn't a prior value, then just save this new one...
-            		if [ ! "${LASTLOGVALUE}" ] || [ "${FORCE}" ] || [ "${SIGNALK_VALUE}" != "${LASTLOGVALUE}" ] ; then
-                		echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${LABEL} ${SIGNALK_VALUE}" >> ${LOGPATHNAME}
-			fi
-            	fi
-		if [ "${CONDITION}" == "" ] ; then LASTTOPLEVELVALUE=${SIGNALK_VALUE} ; fi
+			    LASTLOGVALUE=
+			    # Recover last logged value of this data item
+			    if [ -f ${LOGPATHNAME} ] ; then
+            		LASTLOGVALUE=$(${GREP} "${TOKEN} ${LABEL}" "${LOGPATHNAME}" | ${TAIL} -1 | ${CUT} -d ' ' -f5-)
+			    fi
+			    # If there isn't a prior value, then just save this new one...
+            	if [ ! "${LASTLOGVALUE}" ] || [ "${FORCE}" ] || [ "${SIGNALK_VALUE}" != "${LASTLOGVALUE}" ] ; then
+               		echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${LABEL} ${SIGNALK_VALUE}" >> ${LOGPATHNAME}
+			    fi
+            fi
+		    if [ "${CONDITION}" == "" ] ; then LASTTOPLEVELVALUE=${SIGNALK_VALUE} ; fi
         fi
     done <<< "${RULES}"
 done

@@ -1,0 +1,90 @@
+#!/bin/bash
+#
+# NAME
+#   log-get - get the value field from selected log file records.
+#
+# SYNOPSIS
+#   log-get [-{f|l}] regex logfilespec...
+#   log-get -h
+#
+# DESCRIPTION
+#   logfilespec is a log file specifier of one of three types:
+#
+#   YYYY selects all the log files for the specified year;
+#   YYYYMM selects all the log files for the specified month;
+#   YYYYMMDD selects the log file for the specified day.
+#
+#   The selected log files are concatenated and filtered to extract records
+#   matching regex and the contained value fields are returned as a list.
+#
+#   The -f and -l switches restrict output to just the first or last selected
+#   records respectively.
+#
+#   If the selected record values are ratios, then convert them to percentages
+#
+# AUTHOR
+#   Paul Reeve <preeve@pdjr.eu>
+
+source log.defs
+
+FILESPECS=
+FILESPEC=
+PATTERN=
+RESTRICTION=
+PERCENT=
+
+while [ "$1" != "" ] ; do
+	case $1 in
+		-f)
+			RESTRICTION="first"
+			;;
+		-h)
+			${GREP} '^#' ${0}
+			exit 0
+			;;
+		-l)
+			RESTRICTION="last"
+			;;
+		-p)
+			PERCENT=yes
+			;;
+		*)
+			if [ "${PATTERN}" == "" ] ; then
+				PATTERN="${1}"
+			else
+            			FILESPEC=${1}
+            			while [ ${#FILESPEC} -lt 8 ] ; do FILESPEC=${FILESPEC}'?' ; done
+            			FILESPECS="${FILESPECS} ${LOGDIR}${FILESPEC}"
+			fi
+            		;;
+	esac
+	shift
+done
+
+if [ "${PATTERN}" == "" ] || [ "${FILESPECS}" == "" ] ; then
+	echo "usage: log-get [-{f|l}] [-p] regex logfilespec..."
+	echo "usage: log-get -h"
+	exit 1
+fi
+
+RECORDS=$(${CAT} ${FILESPECS} | ${GREP} "${PATTERN}" | ${CUT} -d ' ' -f5-) 
+
+if [ "${PERCENT}" == "yes" ] ; then
+	PROCESSEDRECORDS=
+	while read -r record ; do
+		PROCESSEDRECORDS="${PROCESSEDRECORDS}"$(echo "scale=0; (${record} * 100) / 1" | ${BC})$'\n'
+	done <<< "${RECORDS}"	
+	RECORDS="${PROCESSEDRECORDS}"
+fi
+
+case $RESTRICTION in
+	first)
+		echo -n "${RECORDS}" | ${HEAD} -1
+		;;
+	last)
+		echo -n "${RECORDS}" | ${TAIL} -1
+		;;
+	*)
+		echo "${RECORDS}"
+		;;
+esac

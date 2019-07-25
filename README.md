@@ -142,6 +142,11 @@ argument which is a full or partial log file name of the form _YYYYMMDD_,
 _YYYYMM_ or _YYYY_, selecting a daily log file, all log files for a month or all
 log files for a year respectively.
 
+### log-get - return values from the log selecting records using a regular expression
+
+Returns a list of values from the selected log file(s) after filtering
+records using a regular expression.
+
 ### log-positions - get the positions through which the vessel passed
 
 Returns a list of position values from the selected log file(s).
@@ -166,8 +171,7 @@ Returns the total runtime _HH_:_MM_ for some device by filtering the selected
 log files using a supplied token and then summing the intervals between State 1
 and State 0 log entries. 
 
-### log-tabulate - returns an HTML table depicting the start and finish values
-for some metrics
+### log-report - populate a report template with log data values
 
 ### log-kml - returns a KML document representing position and stop data
 

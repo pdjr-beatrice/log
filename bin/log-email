@@ -22,10 +22,16 @@ if [ "${1}" == "" ] ; then
     exit 1
 fi
 
+REPORT_TEMPLATE=${LOGEMAIL_DEFAULT_REPORT_TEMPLATE}
+
 while [ "${1}" ] ; do
     case ${1} in
         -d)
             DEBUG=yes
+            ;;
+        -t)
+            shift
+            REPORT_TEMPLATE=${1}
             ;;
         *)
             if [ ! "${LOGFILE}" ] ; then
@@ -56,6 +62,16 @@ while [ "${1}" ] ; do
     esac
     shift
 done
+
+if [ "${REPORT_TEMPLATE}" == "" ] ; then
+    echo "log-email: missing argument to -t option"
+    exit 1
+else
+    if [ ! -f "${REPORT_TEMPLATE}" ] ; then
+        echo "log-email: bad or missing report template \"${REPORT_TEMPLATE}\""
+        exit 2
+    fi
+fi
 
 STOPS=$(${LOGSTOPS} ${LOGFILESPEC})
 STOPCOUNT=$(${GREP} -c '^' <<<"${STOPS}")
@@ -118,8 +134,8 @@ fi
 SUBJECT="${CATEGORY}: ${LOGDATESTRING} - ${START}${END}"
 BODY="date: ${PUBDATE}"$'\n'
 BODY="${BODY}tags: ${TAGS},${CATEGORY}"$'\n'
-BODY="${BODY}<div class='${TAGS} ${CATEGORY}'>"$'\n'
-BODY="${BODY}$(${LOGTABULATE} ${LOGFILESPEC})"$'\n'
+BODY="${BODY}<div class='report ${CATEGORY} ${TAGS}'>"$'\n'
+BODY="${BODY}$(${LOGREPORT} -t ${REPORT_TEMPLATE} ${LOGFILESPEC})"$'\n'
 BODY="${BODY}</div>"$'\n'
 if [ "${DEBUG}" == "yes" ] ; then
     echo "Subject: ${SUBJECT}"

@@ -14,6 +14,7 @@ HEAD=/usr/bin/head
 JQ=/usr/bin/jq
 LS=/bin/ls
 MIMECONSTRUCT=/usr/bin/mime-construct
+PERL=/usr/bin/perl
 PYTHON=/usr/bin/python
 RM=/bin/rm
 SED=/bin/sed
@@ -30,9 +31,11 @@ BINDIR=/usr/local/bin/
 LOGDIR=/var/log/beatrice/
 LOGATREST=${BINDIR}log-atrest
 LOGEMAIL=${BINDIR}log-email
+LOGGET=${BINDIR}log-get
 LOGKML=${BINDIR}log-kml
 LOGPLOT=${BINDIR}log-plot
 LOGPOSITIONS=${BINDIR}log-positions
+LOGREPORT=${BINDIR}log-report
 LOGRUNTIME=${BINDIR}log-runtime
 LOGSTOPS=${BINDIR}log-stops
 LOGTABULATE=${BINDIR}log-tabulate
@@ -44,7 +47,9 @@ LOGUPDATE=${BINDIR}log-update
 #
 LOG_EMAIL_TEMPORARY_STATIC_MAP="/tmp/map.png"
 LOG_EMAIL_DEFAULT_RECIPIENT="wordpress@pdjr.eu"
+LOGEMAIL_DEFAULT_REPORT_TEMPLATE=/usr/local/etc/logreport.template
 LOG_HOURS_DEFAULT_DEVICE="ENGINE"
+LOG_REPORT_DEFAULT_TEMPLATE="log-report.template"
 
 MAPBOX_ACCESS_TOKEN="pk.eyJ1IjoicHJlZXZlOTUzNCIsImEiOiJjamdzMndiYWUwaHBtMnhzM3ByNzQ2Nnd3In0.afYS2Tk3E5PKxWfvnqxhuw"
 MAPBOX_MAPSIZE="800x400"
@@ -64,25 +69,6 @@ minutes2hm() {
     local h=$(( ${1} / 60 ))
     local m=$(( ${1} - (${h} * 60) ))
     echo "${h}:${m}"
-}
-
-# Takes a key and a file, returns the value
-function getStartValue() {
-    read -r date sdate token label value <<<$(${CAT} ${2} | ${GREP} "${1}" | ${HEAD} -1)
-    if [ "${value}" == "" ] ; then
-        echo "n/a"
-    else
-        echo "$(echo "${value}"' * '"${3}" | ${BC} -l)"
-    fi
-}
-
-function getEndValue() {
-    read -r date sdate token label value <<<$(${CAT} ${2} | ${GREP} "${1}" | ${TAIL} -1)
-    if [ "${value}" == "" ] ; then
-        echo "n/a"
-    else
-        echo "$(echo "${value}"' * '"${3}" | ${BC} -l)"
-    fi
 }
 
 # Normalise a value destined for the log file into the required standard
