@@ -40,14 +40,14 @@ LOGRUNTIME=${BINDIR}log-runtime
 LOGSTOPS=${BINDIR}log-stops
 LOGTABULATE=${BINDIR}log-tabulate
 LOGTRIP=${BINDIR}log-trip
-LOGTRIPSCRIPT=${BINDIR}log-trip.py
+LOGTRIPSCRIPT=${BINDIR}/../lib/log-trip.py
 LOGUPDATE=${BINDIR}log-update
 
 # log script defaults ########################################################
 #
 LOG_EMAIL_TEMPORARY_STATIC_MAP="/tmp/map.png"
 LOG_EMAIL_DEFAULT_RECIPIENT="wordpress@pdjr.eu"
-LOGEMAIL_DEFAULT_REPORT_TEMPLATE=/usr/local/etc/logreport.template
+LOGEMAIL_DEFAULT_REPORT_TEMPLATE=/usr/local/etc/log-report.template
 LOG_HOURS_DEFAULT_DEVICE="ENGINE"
 LOG_REPORT_DEFAULT_TEMPLATE="log-report.template"
 

@@ -27,51 +27,20 @@
 
 source log.defs
 
-LOGFILE="$(${DATE} '+%Y%m%d')"
-
 if [ "${1}" == "" ] ; then
-    echo -e "usage: log [logfile] command [command-options...]"
+    echo -e "usage: log log-script [script-options...]"
     echo -n "  where command is one of:"
     for name in ${BINDIR}log-* ; do echo -n " ${name#*-}" ; done
     echo ""
     exit 1
-fi
-
-if [ ! -f "${BINDIR}/log-${1}" ] ; then
-    LOGFILE="${1}"
-    shift
-fi
-
-case ${1} in
-    atrest)
-        ${LOGATREST} ${LOGFILE} ${2} ${3} ${4}
-        ;;
-    email)
-        ${LOGEMAIL} ${LOGFILE} ${2} ${3} ${4} ${LOG_EMAIL_RECIPIENT}
-        ;;
-    hours)
-        ${LOGHOURS} ${LOGFILE} ${2} ${3} ${4}
-        ;;
-    plot)
-        ${LOGPLOT} ${LOGFILE} ${2} ${3} ${4} "${LOG_PLOT_KEY}"
-        ;;
-    positions)
-        ${LOGPOSITIONS} ${LOGFILE} ${2} ${3} ${4}
-        ;;
-    stops)
-        ${LOGSTOPS} ${LOGFILE} ${2} ${3} ${4}
-        ;;
-    tabulate)
-        ${LOGTABULATE} ${LOGFILE} ${2} ${3} ${4}
-        ;;
-    trip)
-        ${LOGTRIP} ${LOGFILE} ${2} ${3} ${4}
-        ;;
-    update)
-        ${LOGUPDATE} ${LOGDIR} ${2} ${3} ${4}
-        ;;
-    *)
-        echo "log: invalid command"
+else
+    LOGSCRIPT="${BINDIR}log-${1}"
+    if [ ! -f "${LOGSCRIPT}" ] ; then
+        echo "$(${BASENAME} ${0}): bad or missing log script \"${LOGSCRIPT}\""
         exit 2
-        ;;
-esac
+    fi
+fi
+
+LOGFILE="$(${DATE} '+%Y%m%d')"
+
+${LOGSCRIPT} ${2} ${3} ${4} ${5} ${LOGFILE}

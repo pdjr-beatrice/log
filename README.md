@@ -101,7 +101,7 @@ The '!' character at the beginning of an enquiry identifies it as non-recording
 meaning that it will be processed normally but the result will not be saved to
 the log.
 This behaviour can be used in combination with subsequent conditional enquiries
-to perform and invisible test. 
+to perform an invisible test. 
 
 ## Log system scripts
 
@@ -112,11 +112,12 @@ available options.
 ## Using `log-update` to maintain the log
 
 The `log-update` script is exclusively responsible for updating daily log files
-by executing the Signal K enquiries identified in the log configuration file and
-will automatically create new log files conditioned by time in the current time
-zone.
-When a new log file is created, enquiries in any "INIT" paragraph are
-automatically executed.
+by executing the Signal K enquiries identified in the log configuration file, 
+automatically creating new log files when necessary and writing data into the
+current daily log.
+
+When a new log file is created, enquiries in any "INIT" paragraph in the log
+configuration file are automatically executed.
 
 In normal use, `log-update` takes one or more paragraph names as its
 argument(s) and processes the selected enquiries into log entries.
@@ -145,12 +146,12 @@ log files for a year respectively.
 
 ### log-get - return arbitrary values from the selected log
 
-
-__log-get__ [__-__{__f__|__l__}] [__-c__ _conversion_] _regex_ _file-selector..._
-
-
 __log-get__ is just a wrapper for grep(1) which appropriately expands log system
 _file-selector_ before applying _regex_.
+
+```
+log-get "BATTERYSTATE Domestic" 2019
+```
 
 The script returns the selected list of values.
 
