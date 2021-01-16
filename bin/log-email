@@ -40,15 +40,15 @@ while [ "${1}" ] ; do
                 case ${#LOGFILESPEC} in
                     4) 
                         LOGDATESTRING=${LOGFILESPEC}
-                        PUBDATE=$(${DATE} '+%_d %b, %Y')
+                        PUBDATE=$(${DATE} '+%Y%m%d')
                         ;;
                     6)
                         LOGDATESTRING=$(${DATE} -d ${LOGFILESPEC}01 '+%B %Y')
-                        PUBDATE=$(${DATE} '+%_d %b, %Y')
+                        PUBDATE=$(${DATE} '+%Y%m%d')
                         ;;
                     8)
                         LOGDATESTRING=$(${DATE} -d "${LOGFILESPEC}" '+%a %d %b %Y')
-                        PUBDATE=$(${DATE} -d "${LOGFILESPEC}" '+%_d %b, %Y')
+                        PUBDATE=$(${DATE} -d "${LOGFILESPEC}" '+%Y%m%d')
                         ;;
                     *)
                         echo "log-email: bad or missing logfile specification"
