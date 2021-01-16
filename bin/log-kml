@@ -115,8 +115,21 @@ for FILENAME in ${FILESPECS} ; do
     if [ ${STOPCOUNT} -gt 0 ] ; then
         COUNT=1
         while read -r value ; do
+            lon=$(echo ${value} | ${JQ} -j '.longitude')
+            lat=$(echo ${value} | ${JQ} -j '.latitude')
             lonlat=$(echo ${value} | ${JQ} -j '.longitude,",",.latitude')
             date=$(echo ${value} | ${JQ} -j '.date')
+            fullday=${date%%T*}
+            day=${fullday//-/}
+            time=${date#*T}
+            name=${lonlat}
+            REVERSEGEORESULT=$(${WGET} -q -O - "${NOMINATUM_QUERY}lat=${lat}&lon=${lon}")
+            BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.hamlet')
+            if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.village') ; fi
+            if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.suburb') ; fi
+            if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.municipality') ; fi
+            if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.city') ; fi
+            if [ "${BLOB}" != "null" ] ; then name=$(${RECODE} ..html <<<"${BLOB}") ; fi
             case ${COUNT} in
                 1)
                     if [ "${STOPCOUNT}" == "1" ] ; then 
@@ -125,10 +138,11 @@ for FILENAME in ${FILESPECS} ; do
                         marker="#startmarker"
                     fi
                     echo '    <Placemark>'
-                    echo "      <name>${date}</name>"
+                    echo "      <name>START ${time}</name>"
                     echo '      <description>'
-                    echo '        <![CDATA['
-                    echo '        ]]>'
+                    echo "        <![CDATA["
+                    echo "          <b><a href='/?tag=${name}'>${name}</a></b>"
+                    echo "        ]]>"
                     echo '      </description>'
                     echo "      <styleUrl>${marker}</styleUrl>"
                     echo '      <Point>'
@@ -141,10 +155,11 @@ for FILENAME in ${FILESPECS} ; do
                 ${STOPCOUNT})
                     marker="#stopmarker"
                     echo '    <Placemark>'
-                    echo "      <name>${date}</name>"
+                    echo "      <name>STOP ${time}</name>"
                     echo '      <description>'
-                    echo '        <![CDATA['
-                    echo '        ]]>'
+                    echo "        <![CDATA["
+                    echo "          <b><a href='/?tag=${name}'>${name}</a></b>"
+                    echo "        ]]>"
                     echo '      </description>'
                     echo "      <styleUrl>${marker}</styleUrl>"
                     echo '      <Point>'
@@ -157,10 +172,11 @@ for FILENAME in ${FILESPECS} ; do
                 *)
                     marker="#haltmarker"
                     echo '    <Placemark>'
-                    echo "      <name>${date}</name>"
+                    echo "      <name>HALT ${time}</name>"
                     echo '      <description>'
-                    echo '        <![CDATA['
-                    echo '        ]]>'
+                    echo "        <![CDATA["
+                    echo "          <b><a href='/?tag=${name}'>${name}</a></b>"
+                    echo "        ]]>"
                     echo '      </description>'
                     echo "      <styleUrl>${marker}</styleUrl>"
                     echo '      <Point>'
@@ -181,7 +197,13 @@ for FILENAME in ${FILESPECS} ; do
     HOURS=$(${LOGRUNTIME} ${LOGFILE})
     if [ ${POSITIONCOUNT} -gt 1 ] ; then
         echo '    <Placemark>'
-        echo "      <name>${DISTANCE}km (${HOURS}h)</name>"
+        echo "      <name>PASSAGE</name>"
+        echo '      <description>'
+        echo "        <![CDATA["
+        echo "          <b><a href='/?m=${day}'>${fullday}</a></b>"
+        echo "          <br>${DISTANCE}km (${HOURS}h)"
+        echo "        ]]>"
+        echo '      </description>'
         echo '      <styleUrl>#linestyle</styleUrl>'
         echo '      <LineString>'
         echo '        <coordinates>'

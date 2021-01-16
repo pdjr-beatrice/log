@@ -16,6 +16,7 @@ LS=/bin/ls
 MIMECONSTRUCT=/usr/bin/mime-construct
 PERL=/usr/bin/perl
 PYTHON=/usr/bin/python
+RECODE=/usr/bin/recode
 RM=/bin/rm
 SED=/bin/sed
 TAC=/usr/bin/tac

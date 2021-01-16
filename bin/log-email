@@ -88,20 +88,15 @@ LAT=$(echo ${STARTPOSITION} | ${JQ} -j '.latitude');
 LON=$(echo ${STARTPOSITION} | ${JQ} -j '.longitude');
 START="${LAT}N ${LON}E"
 END=""
+ENDCLAUSE=""
 REVERSEGEORESULT=$(${WGET} -q -O - "${NOMINATUM_QUERY}lat=${LAT}&lon=${LON}")
-if [ $? -eq 0 ] ; then
-    SUBURB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.suburb')
-    CITY=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.city')
-    COUNTRY="["$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.country')"]"
-    if [ "${SUBURB}" != "" ] ; then
-        START="${SUBURB}"
-    else
-        if [ "${CITY}" != "" ] ; then
-            START="${CITY}"
-        fi
-    fi
-    if [ "${DEBUG}" == "yes" ] ; then echo "log-email: debug: start position identified as ${START}" ; fi
-fi
+BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.hamlet')
+if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.village') ; fi
+if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.suburb') ; fi
+if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.municipality') ; fi
+if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.city') ; fi
+if [ "${BLOB}" != "null" ] ; then START=$(${RECODE} ..html <<<"${BLOB}") ; fi
+if [ "${DEBUG}" == "yes" ] ; then echo "log-email: debug: start position identified as ${START}" ; fi
 
 # If there is a termination position, then do the same thing for that.
 #
@@ -111,29 +106,21 @@ if [ ${STOPCOUNT} -gt 1 ]; then
     LON=$(echo ${STOPPOSITION} | ${JQ} -j '.longitude');
     END="${LAT}N ${LON}E"
     REVERSEGEORESULT=$(${WGET} -q -O - "${NOMINATUM_QUERY}lat=${LAT}&lon=${LON}")
-    if [ $? -eq 0 ] ; then
-        END=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.suburb')
-        if [ "${END}" == "null" ] ; then
-            END=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.city')
-            if [ "${END}" == "null" ] ; then
-                END="${LAT}N ${LON}E"
-            fi
-        fi
-    fi
+    BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.hamlet')
+    if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.village') ; fi
+    if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.suburb') ; fi
+    if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.municipality') ; fi
+    if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.city') ; fi
+    if [ "${BLOB}" != "null" ] ; then END=$(${RECODE} ..html <<<"${BLOB}") ; fi
     if [ "${DEBUG}" == "yes" ] ; then echo "log-email: debug: end position identified as ${END}" ; fi
-    END=" to ${END}"
+    ENDCLAUSE=" to ${END}"
 fi
 
+CATEGORY="moored"; if [ ${STOPCOUNT} -gt 1 ] ; then CATEGORY="passage" ; fi
 
-CATEGORY="moored"
-TAGS="logentry"
-if [ ${STOPCOUNT} -gt 1 ] ; then
-    CATEGORY="passage"
-fi
-
-SUBJECT="${CATEGORY}: ${LOGDATESTRING} - ${START}${END}"
+SUBJECT="${CATEGORY}: ${LOGDATESTRING} - ${START}${ENDCLAUSE}"
 BODY="date: ${PUBDATE}"$'\n'
-BODY="${BODY}tags: ${TAGS},${CATEGORY}"$'\n'
+BODY="${BODY}tags: logentry,${CATEGORY},${START},${END}"$'\n'
 BODY="${BODY}<div class='report ${CATEGORY} ${TAGS}'>"$'\n'
 BODY="${BODY}$(${LOGREPORT} -t ${REPORT_TEMPLATE} ${LOGFILESPEC})"$'\n'
 BODY="${BODY}</div>"$'\n'

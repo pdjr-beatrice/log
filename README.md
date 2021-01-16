@@ -1,39 +1,43 @@
 # log - ship log system and integrated blog
 
-This collection of scripts implements a system for maintaining, manipulating
-and publishing a simple ship's log using data derived from a
+This collection of scripts implements a system for maintaining,
+manipulating and publishing a simple ship's log using data derived from
+a
 [Signal K](http://www.signalk.org) Node Server.
 A reference implementation of the __log__ system executes on the vessel
-_Beatrice of Hull_ and log files are published daily by email to the ship's
-[blog](http://www.pdjr.eu/).
+_Beatrice of Hull_ and log files are published daily by email to the
+ship's [blog](http://www.pdjr.eu/beatrice/).
 
 The log system core implementation consists of a single bash(1) script
-responsible for creating and updating daily log files and a number of other
-scripts designed to interrogate these files, render the contained data in a
-range of formats and distribute the rendered content via email.
-These scripts can, in principle, execute on any machine which has real-time
-access to port 80 on the Signal K server(s) supplying the raw log data.
-_Beatrice_'s log system simply runs on the ship's Signal K server host with
-script execution automated by the system scheduler.
+responsible for creating and updating daily log files and a number of
+other scripts designed to interrogate these files, render the contained
+data in a range of formats and distribute the rendered content via
+email.
+These scripts can, in principle, execute on any machine which has
+real-time access to port 80 on the Signal K server(s) supplying the raw
+log data.  _Beatrice_'s log system simply runs on the ship's Signal K
+server host with script execution automated by the system scheduler.
 
-At the end of each day, _Beatrice_ generates an email from the day's log which
-summarises operating data and includes a KML attachment representing the ship's
-passage over the preceeding 24 hours.
-The email is posted to a dedicated email account from which it is subsequently
-retrieved by a cloud-based
+At the end of each day, _Beatrice_ generates an email from the day's
+log which summarises operating data and includes a KML attachment
+representing the ship's passage over the preceeding 24 hours.
+The email is posted to a dedicated email account from which it is
+subsequently retrieved by a cloud-based
 [Wordpress](https://wordpress.org/)
-installation that publishes the email as a new blog page.
+installation that publishes the email as a new blog post.
 A simple filter script is used by Wordpress to interpolate an
 [Open Sea Map](https://www.openseamap.org/)
 rendering of the KML attachment into the published page.
 
 ## Log files and log system configuration
 
-A log file is a plain text file consisting of an arbitrary number of log entries
-relating to a single day as defined by the local time zone.
-Log files have a name of the form _YYYYMMDD_.
+A log file is a plain text file consisting of an arbitrary number of
+log entries.
+Each log file contains entries relating to a single day as defined by
+the local time zone and log files have a name of the form _YYYYMMDD_.
 
-Each entry in a log file is just a time-stamped, labelled, Signal K data value. 
+Each entry in a log file is just a time-stamped, labelled, Signal K
+data value. 
 A snippet from one of _Beatrice_'s recent log files looks like this:
 
 ```
@@ -47,14 +51,16 @@ A snippet from one of _Beatrice_'s recent log files looks like this:
 
 Each log entry has the general format.
 
-_timestamp_ __[___signalk-timestamp___]__ _label-1_ _label-1.1_ _value_
+_timestamp_ __[__*signalk-timestamp*__]__ _label-1_ _label-1.1_ _value_
 
-Where _timestamp_ is the time the log entry was made; _signalk-timestamp_ is time
-Signal K associates with _value_; _label-1_ and _label-1.1_ are identifying
-labels for _value_ which is the substantive Signal K data point.
+Where _timestamp_ is the time the log entry was made;
+_signalk-timestamp_ is time Signal K associates with _value_; _label-1_
+and _label-1.1_ are identifying labels for _value_ which is the
+substantive Signal K data point.
 
-Exactly what data is written to a log file is determined by a log configuration file
-which consists of a collection of _enquiries_ organised into named _paragraphs_.
+Exactly what data is written to a log file is determined by a log
+configuration file which consists of a collection of _enquiries_
+organised into named _paragraphs_.
 _Beatrice_'s log configuration file looks like this.
 
 ```
@@ -95,7 +101,7 @@ non-conditional enquiry obtained a value of 1 from the Signal K server.
 Thus, in the configuration presented above, if executing the "ENGINE State"
 enquiry returns the value "1" (saying engine running), then the ">POSITION
 Position" enquiry will be processed, otherwise it will be ignored, ensuring that
-position data is only logged if the vessel is moving.
+real-time position data is only logged if the vessel is moving.
 
 The '!' character at the beginning of an enquiry identifies it as non-recording
 meaning that it will be processed normally but the result will not be saved to
