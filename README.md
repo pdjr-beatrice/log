@@ -1,30 +1,67 @@
-# log - a simple log system
+# *Beatrice*s automated ship's (b)log
 
-__log__ provides a collection of scripts which can be used to build and
-interrogate a repository of log files which track data recovered from
-arbitrary remote sources via HTTP GET requests.
+My wife and I used to blog about our cruising experiences.
+We wrote mostly to document where we went, what we saw and what happened
+to us.
+Then we got bored.
 
-The system was developed to maintain and publish a daily ship's log
-using data available from the vessel's
-[Signal K](http://www.signalk.org) Node Server, but new log files can be
-created yearly, monthly daily or hourly.
+We also kept a paper ship's log that recorded details of the position and
+operation of the ship and some things about its internal state and operating
+environment.
+This was a chore.
+Some of this data we wanted to be publically available (so family and friends
+could keep track of us) and a lot of it we wanted to be more easily accessible
+than a paper log-book allowed.
 
-The log system repository is simply a file system directory containing a
-collection of text files (each of which we refer to as a *log file*).
-Each *log file* represents a single quanta in the log where the limits
-of each quantun is defined in terms of the current local timezone.
-A log file is identified by a name of the form *YYYY[MM[DD[HH]]]*, so
-daily log files all have a name of the form *YYYYMMDD*.
+In 2019 we decided to change all that: we would stop writing a regular,
+rhetorical, blog and automate as far as we could the keeping of the ship's
+paper log.
+This article discusses what we did and how we did it.
 
-Each *log file* contains zero or more time-sequenced records each of which
-represents a time-stamped data value recovered from one or more data servers.
+## Current state
 
-The log system uses a single bash(1) script to create and update the
-repository.
-A number of other, mostly bash(1), scripts provide mechanisms for retrieving
-data from the repository, transforming it, and distributing it.
+*Beatrice*'s (b)log is available at
+[www.pdjr.eu/beatrice](http://www.pdjr.eu/beatrice/).
 
-## Reference implementation
+This
+[Wordpress]()
+site is hosted on a public server and is entirely ordinary.
+It's use as part of our logging system relies on just two standard Wordpress
+plugins:
+[Postie]()
+which allows us to email in content, and
+[OSM]()
+which renders maps from KML data within our daily logs.
+
+One of the things we hated about our last blog was the complexity of using
+the CMS edititing tools to add content.
+We now add all content by email: mostly the emails are generated automatically
+by the log system, but sometimes we email some hand-crafted content.
+
+
+
+
+
+
+
+
+
+
+
+
+
+and it includes both
+the ship's daily log and some authored content.
+You can see the pub
+We never edit the Wordpress site directly
+You can find the current 
+
+maintains is a 20m live-aboard barge with an NMEA 2000 based
+instrumentation and control system.
+The vessel incorporates a Signal K server which mediates most of the
+vessel's opeation and provides an accessible source of operating data.
+
+This document discusses the implementation of an automated ship's log
 
 A reference implementation of the __log__ system executes on the vessel
 _Beatrice of Hull_ and automatically maintains automatically publishes log files by email to the
@@ -50,6 +87,31 @@ __log__ includes a simple filter script which can be used by Wordpress to
 interpolate an
 [Open Sea Map](https://www.openseamap.org/)
 rendering of the KML attachment into the published blog page.
+
+
+__log__ provides a collection of scripts which can be used to build and
+interrogate a repository of log files which track data recovered from
+arbitrary remote sources via HTTP GET requests.
+
+The system was developed to maintain and publish a daily ship's log
+using data available from the vessel's
+[Signal K](http://www.signalk.org) Node Server, but new log files can be
+created yearly, monthly daily or hourly.
+
+The log system repository is simply a file system directory containing a
+collection of text files (each of which we refer to as a *log file*).
+Each *log file* represents a single quanta in the log where the limits
+of each quantun is defined in terms of the current local timezone.
+A log file is identified by a name of the form *YYYY[MM[DD[HH]]]*, so
+daily log files all have a name of the form *YYYYMMDD*.
+
+Each *log file* contains zero or more time-sequenced records each of which
+represents a time-stamped data value recovered from one or more data servers.
+
+The log system uses a single bash(1) script to create and update the
+repository.
+A number of other, mostly bash(1), scripts provide mechanisms for retrieving
+data from the repository, transforming it, and distributing it.
 
 ## Log files and log system configuration
 
