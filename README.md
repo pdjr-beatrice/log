@@ -1,117 +1,33 @@
-# *Beatrice*s automated ship's (b)log
+# log - ship log system and integrated blog
 
-My wife and I used to blog about our cruising experiences.
-We wrote mostly to document where we went, what we saw and what happened
-to us.
-Then we got bored.
-
-We also kept a paper ship's log that recorded details of the position and
-operation of the ship and some things about its internal state and operating
-environment.
-This was a chore.
-Some of this data we wanted to be publically available (so family and friends
-could keep track of us) and a lot of it we wanted to be more easily accessible
-than a paper log-book allowed.
-
-In 2019 we decided to change all that: we would stop writing a regular,
-rhetorical, blog and automate as far as we could the keeping of the ship's
-paper log.
-This article discusses what we did and how we did it.
-
-## Current state
-
-*Beatrice*'s (b)log is available at
-[www.pdjr.eu/beatrice](http://www.pdjr.eu/beatrice/).
-
-This
-[Wordpress]()
-site is hosted on a public server and is entirely ordinary.
-It's use as part of our logging system relies on just two standard Wordpress
-plugins:
-[Postie]()
-which allows us to email in content, and
-[OSM]()
-which renders maps from KML data within our daily logs.
-
-One of the things we hated about our last blog was the complexity of using
-the CMS edititing tools to add content.
-We now add all content by email: mostly the emails are generated automatically
-by the log system, but sometimes we email some hand-crafted content.
-
-
-
-
-
-
-
-
-
-
-
-
-
-and it includes both
-the ship's daily log and some authored content.
-You can see the pub
-We never edit the Wordpress site directly
-You can find the current 
-
-maintains is a 20m live-aboard barge with an NMEA 2000 based
-instrumentation and control system.
-The vessel incorporates a Signal K server which mediates most of the
-vessel's opeation and provides an accessible source of operating data.
-
-This document discusses the implementation of an automated ship's log
-
+This collection of scripts implements a system for maintaining,
+manipulating and publishing a simple ship's log using data derived from
+a
+[Signal K](http://www.signalk.org) Node Server.
 A reference implementation of the __log__ system executes on the vessel
-_Beatrice of Hull_ and automatically maintains automatically publishes log files by email to the
+_Beatrice of Hull_ and log files are published daily by email to the
 ship's [blog](http://www.pdjr.eu/beatrice/).
 
-The reference implementation runs on the ship's Signal K server host with
-script execution automated by the system scheduler which periodically
-executes two scripts.
-The log-update script is executed every minute during the day and
-assembles data into the current day's log file, automatically rolling over
-log files at midnight.
-At the end of each day, the log-email script is executed to generate an
-email from the day's log which summarises operating data and includes a
-KML attachment representing the ship's passage over the preceeding 24
-hours. The email is posted to a dedicated email account on a public
-domain mail server (current just a normal GMail account).
+The log system core implementation consists of a single bash(1) script
+responsible for creating and updating daily log files and a number of
+other scripts designed to interrogate these files, render the contained
+data in a range of formats and distribute the rendered content via
+email.
+These scripts can, in principle, execute on any machine which has
+real-time access to port 80 on the Signal K server(s) supplying the raw
+log data.  _Beatrice_'s log system simply runs on the ship's Signal K
+server host with script execution automated by the system scheduler.
 
-A cloud-based
+At the end of each day, _Beatrice_ generates an email from the day's
+log which summarises operating data and includes a KML attachment
+representing the ship's passage over the preceeding 24 hours.
+The email is posted to a dedicated email account from which it is
+subsequently retrieved by a cloud-based
 [Wordpress](https://wordpress.org/)
-installation periodically recovers emails from the dedicated account and
-publishes them as a new blog post.
-__log__ includes a simple filter script which can be used by Wordpress to
-interpolate an
+installation that publishes the email as a new blog post.
+A simple filter script is used by Wordpress to interpolate an
 [Open Sea Map](https://www.openseamap.org/)
-rendering of the KML attachment into the published blog page.
-
-
-__log__ provides a collection of scripts which can be used to build and
-interrogate a repository of log files which track data recovered from
-arbitrary remote sources via HTTP GET requests.
-
-The system was developed to maintain and publish a daily ship's log
-using data available from the vessel's
-[Signal K](http://www.signalk.org) Node Server, but new log files can be
-created yearly, monthly daily or hourly.
-
-The log system repository is simply a file system directory containing a
-collection of text files (each of which we refer to as a *log file*).
-Each *log file* represents a single quanta in the log where the limits
-of each quantun is defined in terms of the current local timezone.
-A log file is identified by a name of the form *YYYY[MM[DD[HH]]]*, so
-daily log files all have a name of the form *YYYYMMDD*.
-
-Each *log file* contains zero or more time-sequenced records each of which
-represents a time-stamped data value recovered from one or more data servers.
-
-The log system uses a single bash(1) script to create and update the
-repository.
-A number of other, mostly bash(1), scripts provide mechanisms for retrieving
-data from the repository, transforming it, and distributing it.
+rendering of the KML attachment into the published page.
 
 ## Log files and log system configuration
 
@@ -157,7 +73,7 @@ TANKLEVEL FuelSB http://192.168.1.1:3000/signalk/v1/api/vessels/self/tanks/fuel/
 BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/batteries/258/capacity/stateOfCharge
 POSITION Position http://192.168.1.1:3000/signalk/v1/api/vessels/self/navigation/position
 
-[RUN]
+[REALTIME]
 ENGINE State http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/switches/16/16/state
 >POSITION Position http://192.168.1.1:3000/signalk/v1/api/vessels/self/navigation/position
 GENERATOR State http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/switches/16/14/state
@@ -176,9 +92,8 @@ Each enquiry in the log configuration file has the general format:
 \[__>__|__!__\]_label-1_ _label-1.1_ _url_
 
 where _label-1_ and _label-1.1_ serve both a documentary and identification
-role and _url_ gives the path to the data value that should be stored in the log.
-Whilst all the data I use derives from my Signal K server, any data source that
-can supply JSON data in response to an HTTP GET request on *url* can be used.
+role and _url_ gives the path to the Signal K data value that should be stored
+in the log.
 
 The '>' character at the beginning of an enquiry identifies it as conditional
 and it will only be processed if processing of the immediately preceeding
@@ -186,8 +101,7 @@ non-conditional enquiry obtained a value of 1 from the Signal K server.
 Thus, in the configuration presented above, if executing the "ENGINE State"
 enquiry returns the value "1" (saying engine running), then the ">POSITION
 Position" enquiry will be processed, otherwise it will be ignored, ensuring that
-real-time position data is only logged if the vessel is moving (well, strictly
-if its main engine is running).
+real-time position data is only logged if the vessel is moving.
 
 The '!' character at the beginning of an enquiry identifies it as non-recording
 meaning that it will be processed normally but the result will not be saved to
@@ -199,30 +113,27 @@ to perform an invisible test.
 
 All log system scripts take a __-h__ option which displays the script's
 comprehensive manual page: the following descriptions do not address all
-available options.
+available options.  
 
 ## Using `log-update` to maintain the log
 
 The `log-update` script is exclusively responsible for updating daily log files
-by executing the enquiries identified in the log configuration file and writing
-recovered data into the current daily log.
+by executing the Signal K enquiries identified in the log configuration file, 
+automatically creating new log files when necessary and writing data into the
+current daily log.
 
-Each day on its first execution after midnight, the script will execute the
-queries defined in the log configuration file's INIT paragraph and so create
-a new log file for the upcoming day.
+When a new log file is created, enquiries in any "INIT" paragraph in the log
+configuration file are automatically executed.
 
 In normal use, `log-update` takes one or more paragraph names as its
 argument(s) and processes the selected enquiries into log entries.
-
-It usually makes sense to schedule automatic execution of the update script:
-indeed, if the log system is being used to track vessel movements, then scheduling
-is pretty-much mandatory and the frequency of script execution will determine
+It usually makes sense to schedule execution of the update script: indeed, if
+the log system is being used to track vessel movements, then scheduling is
+pretty-much mandatory and the frequency of script execution will determine
 the resolution of the logged track.
 
 The `log-update` script will only write values returned from the Signal K server
-to the log file if they differ from the most recently logged value of the same
-type.
-In this way, log files do not fill with redundant data.
+to the log file if they differ from the most recent previously logged value.
 
 On _Beatrice_ `log-update` is executed in response to the following `crontab`
 entries:
