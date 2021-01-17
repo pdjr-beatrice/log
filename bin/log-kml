@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # NAME
-#   log-kml - generate KML rendering of one or more log files.
+#   log-kml - generate a KML rendering of one or more log files.
 #
 # SYNOPSIS
 #   log-kml [-a] logfilespec...
@@ -14,21 +14,24 @@
 #   YYYYMM selects all the log files for the specified month;
 #   YYYYMMDD selects the log file for the specified day.
 #
-#   log-kml renders the selected log files as a KML document suitable for
-#   overlaying on a map.  For each selected file, a KML Folder entity is
-#   generated containing one or more Placemark entities defining markers which
-#   indicate stops made during the day (see log-stops(1)) and a single
-#   Placemark entity defining a line string which depicts the track of the
-#   vessel (see log-positions(1)).
+#   log-kml(1) renders the selected log files as a KML document
+#   suitable for overlaying on a map. The substantive KML content of
+#   the output file is:
 #
-#   If the -a switch is given, then it is passed to log-stops(1) and will thus
-#   influence the granularity of stop rendering.
+#   1. A Folder containing a Placemark for each of the stops returned
+#      by executing log-stops(1) against logfilespec.
+#
+#   2. A Placemark entity defining a line string which depicts the
+#      track of the vessel as defined by the points returned by
+#      executing log-positions(1) against logfilespec.
+#
+#   If the -a switch is given, then it is passed to log-stops(1) and
+#   will thus influence the granularity of stop rendering.
 #
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
 source log.defs
-
 
 OPT_ALLSTOPS=
 FILESPECS=
@@ -139,11 +142,10 @@ for FILENAME in ${FILESPECS} ; do
                         marker="#startmarker"
                     fi
                     echo '    <Placemark>'
-                    echo "      <name>START</name>"
+                    echo "      <name>START @ ${time}</name>"
                     echo '      <description>'
                     echo "        <![CDATA["
-                    echo "          <img src='/fileurl.php/?name=${namelc}.jpg' style='float: left;'>"
-                    echo "          <p><a href='/?tag=${name}'>${name}</a><br>${time}"
+                    echo "          <a href='/?tag=${name}'>${name}</a>"
                     echo "        ]]>"
                     echo '      </description>'
                     echo "      <styleUrl>${marker}</styleUrl>"
@@ -157,11 +159,10 @@ for FILENAME in ${FILESPECS} ; do
                 ${STOPCOUNT})
                     marker="#stopmarker"
                     echo '    <Placemark>'
-                    echo "      <name>STOP</name>"
+                    echo "      <name>STOP @ ${time}</name>"
                     echo '      <description>'
                     echo "        <![CDATA["
-                    echo "          <img src='/fileurl.php/?name=${namelc}.jpg' style='float: left;'>"
-                    echo "          <p><a href='/?tag=${name}'>${name}</a><br>${time}"
+                    echo "          <a href='/?tag=${name}'>${name}</a>"
                     echo "        ]]>"
                     echo '      </description>'
                     echo "      <styleUrl>${marker}</styleUrl>"
@@ -175,11 +176,10 @@ for FILENAME in ${FILESPECS} ; do
                 *)
                     marker="#haltmarker"
                     echo '    <Placemark>'
-                    echo "      <name>HALT</name>"
+                    echo "      <name>HALT @ ${time}</name>"
                     echo '      <description>'
                     echo "        <![CDATA["
-                    echo "          <img src='/fileurl.php/?name=${namelc}.jpg' style='float: left;'>"
-                    echo "          <p><a href='/?tag=${name}'>${name}</a><br>${time}"
+                    echo "          <a href='/?tag=${name}'>${name}</a>"
                     echo "        ]]>"
                     echo '      </description>'
                     echo "      <styleUrl>${marker}</styleUrl>"
