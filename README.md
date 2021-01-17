@@ -1,17 +1,20 @@
 # log - a simple log system
 
 __log__ provides a collection of scripts which can be used to build and
-interrogate a repository of daily log files which track data recovered
-from arbitrary remote sources via HTTP GET requests.
-The system was developed to maintain and publish a ship's log using data
-available from the vessel's
-[Signal K](http://www.signalk.org) Node Server.
+interrogate a repository of log files which track data recovered from
+arbitrary remote sources via HTTP GET requests.
+
+The system was developed to maintain and publish a daily ship's log
+using data available from the vessel's
+[Signal K](http://www.signalk.org) Node Server, but new log files can be
+created yearly, monthly daily or hourly.
 
 The log system repository is simply a file system directory containing a
 collection of text files (each of which we refer to as a *log file*).
-Each *log file* represents a single day in the log where a day is defined
-by the current local timezone.
-A log file is identified by a name of the form *YYYYMMDD*.
+Each *log file* represents a single quanta in the log where the limits
+of each quantun is defined in terms of the current local timezone.
+A log file is identified by a name of the form *YYYY[MM[DD[HH]]]*, so
+daily log files all have a name of the form *YYYYMMDD*.
 
 Each *log file* contains zero or more time-sequenced records each of which
 represents a time-stamped data value recovered from one or more data servers.
