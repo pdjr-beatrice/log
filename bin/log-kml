@@ -130,6 +130,7 @@ for FILENAME in ${FILESPECS} ; do
             if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.municipality') ; fi
             if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.city') ; fi
             if [ "${BLOB}" != "null" ] ; then name=$(${RECODE} ..html <<<"${BLOB}") ; fi
+            namelc=${name,,}
             case ${COUNT} in
                 1)
                     if [ "${STOPCOUNT}" == "1" ] ; then 
@@ -138,10 +139,11 @@ for FILENAME in ${FILESPECS} ; do
                         marker="#startmarker"
                     fi
                     echo '    <Placemark>'
-                    echo "      <name>START ${time}</name>"
+                    echo "      <name>START</name>"
                     echo '      <description>'
                     echo "        <![CDATA["
-                    echo "          <b><a href='/?tag=${name}'>${name}</a></b>"
+                    echo "          <img src='/fileurl.php/?name=${namelc}.jpg' style='float: left;'>"
+                    echo "          <p><a href='/?tag=${name}'>${name}</a><br>${time}"
                     echo "        ]]>"
                     echo '      </description>'
                     echo "      <styleUrl>${marker}</styleUrl>"
@@ -155,10 +157,11 @@ for FILENAME in ${FILESPECS} ; do
                 ${STOPCOUNT})
                     marker="#stopmarker"
                     echo '    <Placemark>'
-                    echo "      <name>STOP ${time}</name>"
+                    echo "      <name>STOP</name>"
                     echo '      <description>'
                     echo "        <![CDATA["
-                    echo "          <b><a href='/?tag=${name}'>${name}</a></b>"
+                    echo "          <img src='/fileurl.php/?name=${namelc}.jpg' style='float: left;'>"
+                    echo "          <p><a href='/?tag=${name}'>${name}</a><br>${time}"
                     echo "        ]]>"
                     echo '      </description>'
                     echo "      <styleUrl>${marker}</styleUrl>"
@@ -172,10 +175,11 @@ for FILENAME in ${FILESPECS} ; do
                 *)
                     marker="#haltmarker"
                     echo '    <Placemark>'
-                    echo "      <name>HALT ${time}</name>"
+                    echo "      <name>HALT</name>"
                     echo '      <description>'
                     echo "        <![CDATA["
-                    echo "          <b><a href='/?tag=${name}'>${name}</a></b>"
+                    echo "          <img src='/fileurl.php/?name=${namelc}.jpg' style='float: left;'>"
+                    echo "          <p><a href='/?tag=${name}'>${name}</a><br>${time}"
                     echo "        ]]>"
                     echo '      </description>'
                     echo "      <styleUrl>${marker}</styleUrl>"
