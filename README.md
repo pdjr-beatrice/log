@@ -1,8 +1,10 @@
-# log - ship log system
+# log - a simple log system
 
-This project provides a collection of scripts which can be used to build
-and interrogate a repository of daily log files which track data recovered
-from a
+__log__ provides a collection of scripts which can be used to build and
+interrogate a repository of daily log files which track data recovered
+from arbitrary remote sources via HTTP GET requests.
+The system was developed to maintain and publish a ship's log using data
+available from the vessel's
 [Signal K](http://www.signalk.org) Node Server.
 
 The log system repository is simply a file system directory containing a
@@ -13,21 +15,16 @@ A log file is identified by a name of the form *YYYYMMDD*.
 
 Each *log file* contains zero or more time-sequenced records each of which
 represents a time-stamped data value recovered from one or more data servers.
-Typically the system will recover data from a single Signal K server.
 
 The log system uses a single bash(1) script to create and update the
 repository.
 A number of other, mostly bash(1), scripts provide mechanisms for retrieving
 data from the repository, transforming it, and distributing it.
 
-Access to the Signal K server or servers which supply data to a __log__
-system is via HTTP and the log system can therefore execute on any machine
-which has real-time ethernet access.
-
 ## Reference implementation
 
 A reference implementation of the __log__ system executes on the vessel
-_Beatrice of Hull_ and automatically publishes log files by email to the
+_Beatrice of Hull_ and automatically maintains automatically publishes log files by email to the
 ship's [blog](http://www.pdjr.eu/beatrice/).
 
 The reference implementation runs on the ship's Signal K server host with
