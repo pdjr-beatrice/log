@@ -3,8 +3,8 @@
 This collection of scripts implements a system for automatically
 constructing, processing, publishing and presenting a simple ship's
 log.
-Three bash(1) scripts implement the "server" component of the log
-system and two PHP scripts designed for installatation on a remote
+A handful of bash(1) scripts implement the "server" component of the
+log system and two PHP scripts designed for installatation on a remote
 Wordpress CMS website manage all aspects of presentation.
 
 The data for the ship's log is mostly recovered from the host vessel's
@@ -12,6 +12,12 @@ The data for the ship's log is mostly recovered from the host vessel's
 garnered from online METAR services.
 The log itself consists simply of a collection of text files each of
 which records the events of a calendar day.
+
+## Log construction
+
+Log construction is
+
+
 
 Log files are constructed by a single script, log-update(1), which is
 designed to be executed by the host system's cron(1) daemon.
