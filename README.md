@@ -1,13 +1,23 @@
 # log - ship log system and integrated blog
 
-This collection of scripts implements a system for maintaining,
-manipulating and publishing a simple ship's log using data recovered
-from the vessel's
-[Signal K](http://www.signalk.org) Node Server.
-A reference implementation of the __log__ system executes on the vessel
-*Beatrice of Hull* and log files are published daily by email to the
-ship's blog at
-[http://www.pdjr.eu/beatrice/](http://www.pdjr.eu/beatrice/).
+This collection of scripts implements a system for automatically
+constructing, processing, publishing and presenting a simple ship's
+log.
+Three bash(1) scripts implement the "server" component of the log
+system and two PHP scripts designed for installatation on a remote
+Wordpress CMS website manage all aspects of presentation.
+
+The data for the ship's log is mostly recovered from the host vessel's
+[Signal K](http://www.signalk.org) Node Server with weather data
+garnered from online METAR services.
+The log itself consists simply of a collection of text files each of
+which records the events of a calendar day.
+
+Log files are constructed by a single script, log-update(1), which is
+designed to be executed by the host system's cron(1) daemon.
+
+Vessel position and movements can be rendered as a KML document using
+the log-kml(1) script.
 
 The log system core implementation consists of a single bash(1) script
 responsible for creating and updating daily log files and a number of
@@ -15,12 +25,21 @@ other scripts designed to interrogate these files, render the contained
 data in a range of formats and distribute the rendered content via
 email.
 
+
+A reference implementation of the __log__ system executes on the vessel
+*Beatrice of Hull* and log files are published daily by email to the
+ship's blog at
+[http://www.pdjr.eu/beatrice/](http://www.pdjr.eu/beatrice/).
+
+
+
 The __log__ scripts can execute on any machine which has real-time
 access to servers capable of supplying raw log data by HTTP GET.
 *Beatrice*'s log system simply runs on the ship's Signal K server host
 with script execution automated by the system scheduler.
 
-At the end of each day, *Beatrice* generates an email from that day's
+At the end of each day, *Beatrice* generates an email containing
+simply two attachments from that day's
 log which summarises operating data and includes a KML attachment
 representing the ship's movements over the preceeding 24 hours.
 The email is posted to a dedicated email account from which it is
