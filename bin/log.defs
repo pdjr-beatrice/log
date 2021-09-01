@@ -6,6 +6,8 @@ AWK=/usr/bin/awk
 BASENAME=/usr/bin/basename
 BC=/usr/bin/bc
 CAT=/bin/cat
+CP=/bin/cp
+CURL=/usr/bin/curl
 CUT=/usr/bin/cut
 DATE=/bin/date
 DIRNAME=/usr/bin/dirname
@@ -34,18 +36,18 @@ LOGATREST=${BINDIR}log-atrest
 LOGEMAIL=${BINDIR}log-email
 LOGGET=${BINDIR}log-get
 LOGKML=${BINDIR}log-kml
-LOGPLOT=${BINDIR}log-plot
 LOGPOSITIONS=${BINDIR}log-positions
 LOGREPORT=${BINDIR}log-report
 LOGRUNTIME=${BINDIR}log-runtime
 LOGSTOPS=${BINDIR}log-stops
-LOGTABULATE=${BINDIR}log-tabulate
 LOGTRIP=${BINDIR}log-trip
 LOGTRIPSCRIPT=${BINDIR}/../lib/log-trip.py
 LOGUPDATE=${BINDIR}log-update
 
 # log script defaults ########################################################
 #
+CHECKWX_API_URL="https://api.checkwx.com/"
+CHECKWX_API_KEY="45db989560a14614b18c7beddc"
 LOG_EMAIL_TEMPORARY_STATIC_MAP="/tmp/map.png"
 LOG_EMAIL_DEFAULT_RECIPIENT="wordpress@pdjr.eu"
 LOGEMAIL_DEFAULT_REPORT_TEMPLATE=/usr/local/etc/log-report.template
@@ -81,7 +83,7 @@ minutes2hm() {
 normalise() {
     if [ "${1}" ] && [ "${2}" ] ; then
         case ${1} in
-            ENGINE | GENERATOR)
+            ENGINE | GENERATOR | WEATHER)
                 echo "${2}"
                 ;;
             TANKLEVEL | BATTERYSTATE)

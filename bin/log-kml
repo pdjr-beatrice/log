@@ -4,29 +4,39 @@
 #   log-kml - generate a KML rendering of one or more log files.
 #
 # SYNOPSIS
-#   log-kml [-a] logfilespec...
+#   log-kml [-a] [logfile...]
 #   log-kml -h
 #
 # DESCRIPTION
-#   logfilespec is a log file specifier of one of three types:
+#   If the script is invoked with no arguments, then it will operate as
+#   if it had been called with a single logfile argument set to the
+#   value YYYYMMDD that represents the current day.
 #
-#   YYYY selects all the log files for the specified year;
-#   YYYYMM selects all the log files for the specified month;
-#   YYYYMMDD selects the log file for the specified day.
+#   Otherwise, each logfile argument is a log file specifier of the
+#   form:
 #
-#   log-kml(1) renders the selected log files as a KML document
-#   suitable for overlaying on a map. The substantive KML content of
+#   YYYY     - selects all the log files for the specified year;
+#   YYYYMM   - selects all the log files for the specified month;
+#   YYYYMMDD - selects the log file for the specified day.
+#
+#   log-kml(1) concatenates all the selected log files and renders them
+#   as a KML document suitable for overlaying on a map. The substantive
+#   KML content of
 #   the output file is:
 #
 #   1. A Folder containing a Placemark for each of the stops returned
-#      by executing log-stops(1) against logfilespec.
+#      by executing log-stops(1) against the collated data
 #
 #   2. A Placemark entity defining a line string which depicts the
 #      track of the vessel as defined by the points returned by
-#      executing log-positions(1) against logfilespec.
+#      executing log-positions(1) against the collated data.
 #
-#   If the -a switch is given, then it is passed to log-stops(1) and
-#   will thus influence the granularity of stop rendering.
+#   The script supports the following command line options:
+#
+#   -a  passed to log-stops(1) to influence the granularity of stop
+#       rendering.
+#
+#   -h  displays this documentation.
 #
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
@@ -54,10 +64,7 @@ while [ "${1}" != "" ] ; do
     shift
 done
 
-if [ "${FILESPECS}" == "" ] ; then
-    echo -e "usage: log-kml [-a] filespec..."
-    exit 1
-fi
+if [ ! "${FILESPECS}" ] ; then FILESPECS=$(${DATE} +"%Y%m%d") ; fi
 
 echo '<?xml version="1.0" encoding="UTF-8"?>'
 echo '<kml xmlns="http://www.opengis.net/kml/2.2">'

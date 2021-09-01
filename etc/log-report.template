@@ -3,11 +3,11 @@
 		<th>Period</th>
 		<th colspan="2">${DATE}</th>
 	<tr>
-		<td>Position at start of period (lat,lng)</td>
+		<td>Pos at start of period (lat,lng)</td>
 		<td colspan="2">${EXEC LOGSTOPS -f -s}</td>
 	</tr>
 	<tr>
-		<td>Position at end of period (lat,lng)</td>
+		<td>Pos at end of period (lat,lng)</td>
 		<td colspan="2">${EXEC LOGSTOPS -l -s}</td>
 	</tr>
 	<tr>
@@ -42,4 +42,9 @@
         <td>${EXEC LOGGET -f -p "TANKLEVEL FuelPS"},${EXEC LOGGET -f -p "TANKLEVEL FuelSB"}</td>
 		<td>${EXEC LOGGET -l -p "TANKLEVEL FuelPS"},${EXEC LOGGET -l -p "TANKLEVEL FuelSB"}</td>
 	</tr>
+    <tr>
+        <td>Weather conditions at noon</td>
+        <td colspan="2">${EXEC LOGGET -f "WEATHER Metar"}</td>
+    </tr>
 </table>
+

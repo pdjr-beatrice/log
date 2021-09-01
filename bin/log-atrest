@@ -1,35 +1,58 @@
 #!/bin/bash
+#
+# NAME
+#   log-atrest - check a log file an report if vessel was at rest.
+#
+# SYNOPSIS
+#   log-atrest [-v] [logfile]
+#   log-atrest -h
+#
+# DESCRIPTION
+#   If the script is invoked with no arguments, then it will operate as
+#   if it had been called with a single logfile argument set to the
+#   value YYYYMMDD that represents the current day.
+#
+#   Exits with EXITVALUE = 0 if the log file indicates that the vessel
+#   was at rest (i.e. did not navigate) on the day in question,
+#   otherwise sets EXITVALUE = 1.
+#
+#   The following options are understood:
+#
+#   -h  print this documentation;
+#
+#   -v  As well as setting EXITVALUE, print to standard out the values
+#       "yes" if the vessel was at rest and "no" if it wasn't.
+#
+# AUTHOR
+#   Paul Reeve <preeve@pdjr.eu>
 
 source log.defs
 
-if [ "${1}" == "" ] ; then
-    echo "usage: log-atrest [ -v ] logfile"
-    exit 10
-fi
+LOGFILENAME=$(${DATE} +%Y%m%d)
 
-VERBOSE="no"
-if [ "${1}" == "-v" ] ; then VERBOSE="yes" ; shift ; fi
-TODAY=${1}
-TODAYFILE=${LOGDIR}${TODAY}
+while  [ "${1}" != "" ] ; do
+  case ${1} in
+    -h)
+      ${GREP} '^#' ${0}
+      exit 0
+      ;;
+    -v)
+      VERBOSE=1
+      ;;
+    *)
+      LOGFILENAME=${1}
+      ;;
+  esac
+  shift
+done
 
-if [ ! -f "${TODAYFILE}" ] ; then
-    echo "log-atrest: bad or missing logfile '${TODAYFILE}'"
-    exit 11
-fi
+POSITIONS="$(${LOGPOSITIONS} ${LOGFILENAME})"
+POSITIONCOUNT=$(${GREP} -c '^' <<< "${POSITIONS}")
 
-RETVAL="no"
-TODAYSPOSITIONS="$(${GREP} 'POSITION' ${TODAYFILE} | ${CUT} -d ' ' -f5-)"
-TODAYSPOSITIONCOUNT=$(${GREP} -c '^' <<< "${TODAYSPOSITIONS}")
-if [ "${TODAYSPOSITIONCOUNT}" -eq "1" ] ; then
-    YESTERDAY=$(${DATE} -d "${TODAY} 1 day ago 13:00" '+%Y%m%d')
-    YESTERDAYFILE=${LOGDIR}${YESTERDAY}
-    if [ -f "${YESTERDAYFILE}" ] ; then
-        YESTERDAYSFINALPOSITION="$(${GREP} 'POSITION' ${YESTERDAYFILE} | ${TAIL} -1 | ${CUT} -d ' ' -f5-)"
-        if [ "${TODAYSPOSITIONS}" == "${YESTERDAYSFINALPOSITION}" ] ; then
-            RETVAL="yes"
-        fi
-    fi
+if [ ${POSITIONCOUNT} -eq 1 ] ; then
+  if [ ${VERBOSE} ] ; then echo "yes" ; fi
+  exit 0
+else
+  if [ ${VERBOSE} ] ; then echo "no" ; fi
+  exit 1
 fi
-if [ "${VERBOSE}" == "yes" ] ; then echo ${RETVAL} ; fi
-EXIT=0; if [ ${RETVAL} == "no" ] ; then EXIT=1 ; fi
-exit ${EXIT}

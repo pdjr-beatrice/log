@@ -88,7 +88,12 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
                 SIGNALK_VALUE=$(normalise "${TOKEN}" "$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.value' | tr -d '\012')")
             fi
         else
-            SIGNALK_VALUE=$(normalise "${TOKEN}" "$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.value' | tr -d '\012')")
+            if [[ "${SIGNALKPATH}" == "http:"* ]] ; then
+                SIGNALK_VALUE=$(normalise "${TOKEN}" "$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.value' | tr -d '\012')")
+            else
+                SIGNALK_VALUE=$(normalise "${TOKEN}" "$(${SIGNALKPATH} | tr -d '\012')")
+                if [ "${VERBOSE}" ] ; then echo "Command result: ${SIGNALK_VALUE}" ; fi
+            fi
             if [ "${SIGNALK_VALUE}" == "1" ] ; then
                 DOIT=1
             else
@@ -97,7 +102,11 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
         fi
 
         if [ "${SIGNALK_VALUE}" ] ; then
-            TIMESTAMP=$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.timestamp' | tr -d '\012')
+            if [[ "${SIGNALKPATH}" == "http:"* ]] ; then
+                TIMESTAMP=$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.timestamp' | tr -d '\012')
+            else
+                TIMESTAMP=$(${DATE} -Ins) ; TIMESTAMP="${TIMESTAMP%%,*}.000Z"
+            fi
 		    LASTLOGVALUE=
 		    # Recover last logged value of this data item
 		    if [ -f ${LOGPATHNAME} ] ; then
