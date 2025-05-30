@@ -17,7 +17,7 @@ JQ=/usr/bin/jq
 LS=/bin/ls
 MIMECONSTRUCT=/usr/bin/mime-construct
 PERL=/usr/bin/perl
-PYTHON=/usr/bin/python
+PYTHON=/usr/bin/python3
 RECODE=/usr/bin/recode
 RM=/bin/rm
 SED=/bin/sed
@@ -32,6 +32,7 @@ XARGS=/usr/bin/xargs
 #
 BINDIR=/usr/local/bin/
 LOGDIR=/var/log/beatrice/
+LOGIMAGEDIR=${LOGDIR}images/
 LOGATREST=${BINDIR}log-atrest
 LOGEMAIL=${BINDIR}log-email
 LOGGET=${BINDIR}log-get
@@ -43,6 +44,7 @@ LOGSTOPS=${BINDIR}log-stops
 LOGTRIP=${BINDIR}log-trip
 LOGTRIPSCRIPT=${BINDIR}/../lib/log-trip.py
 LOGUPDATE=${BINDIR}log-update
+LOGVESSELS=${LOGDIR}vessels.log
 
 # log script defaults ########################################################
 #
@@ -93,6 +95,10 @@ normalise() {
                 local lat=$(echo "${2}" | ${JQ} -j '.latitude')
                 local lon=$(echo "${2}" | ${JQ} -j '.longitude')
                 echo '{ "latitude": '$( echo "a=${lat};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)', "longitude": '$( echo "a=${lon};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)' }'
+                ;;
+             VESSEL)
+                local out=$( echo "${2}" | ${JQ} -j '.[] | select(.name | length > 0) | "{ \"mmsi\": \"" + .mmsi + "\", \"name\": \"" + .name + "\", \"position\": " + (.navigation.position.value|tostring) + " }\n"' )
+                echo "${out}"
                 ;;
             *)
                 echo ""
