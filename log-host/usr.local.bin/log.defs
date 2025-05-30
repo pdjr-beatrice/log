@@ -1,0 +1,143 @@
+#!/bin/bash
+
+# System program paths #######################################################
+#
+AWK=/usr/bin/awk
+BASENAME=/usr/bin/basename
+BC=/usr/bin/bc
+CAT=/bin/cat
+CP=/bin/cp
+CURL=/usr/bin/curl
+CUT=/usr/bin/cut
+DATE=/bin/date
+DIRNAME=/usr/bin/dirname
+GREP=/bin/grep
+HEAD=/usr/bin/head
+JQ=/usr/bin/jq
+LS=/bin/ls
+MIMECONSTRUCT=/usr/bin/mime-construct
+PERL=/usr/bin/perl
+PYTHON=/usr/bin/python3
+RECODE=/usr/bin/recode
+RM=/bin/rm
+SED=/bin/sed
+TAC=/usr/bin/tac
+TAIL=/usr/bin/tail
+UNIQ=/usr/bin/uniq
+WC=/usr/bin/wc
+WGET=/usr/bin/wget
+XARGS=/usr/bin/xargs
+
+# Log system file locations ##################################################
+#
+BINDIR=/usr/local/bin/
+LOGDIR=/var/log/beatrice/
+LOGIMAGEDIR=${LOGDIR}images/
+LOGATREST=${BINDIR}log-atrest
+LOGEMAIL=${BINDIR}log-email
+LOGGET=${BINDIR}log-get
+LOGKML=${BINDIR}log-kml
+LOGPOSITIONS=${BINDIR}log-positions
+LOGREPORT=${BINDIR}log-report
+LOGRUNTIME=${BINDIR}log-runtime
+LOGSTOPS=${BINDIR}log-stops
+LOGTRIP=${BINDIR}log-trip
+LOGTRIPSCRIPT=${BINDIR}/../lib/log-trip.py
+LOGUPDATE=${BINDIR}log-update
+LOGVESSELS=${LOGDIR}vessels.log
+
+# log script defaults ########################################################
+#
+CHECKWX_API_URL="https://api.checkwx.com/"
+CHECKWX_API_KEY="45db989560a14614b18c7beddc"
+LOG_EMAIL_TEMPORARY_STATIC_MAP="/tmp/map.png"
+LOG_EMAIL_DEFAULT_RECIPIENT="wordpress@pdjr.eu"
+LOGEMAIL_DEFAULT_REPORT_TEMPLATE=/usr/local/etc/log-report.template
+LOG_HOURS_DEFAULT_DEVICE="ENGINE"
+LOG_REPORT_DEFAULT_TEMPLATE="log-report.template"
+
+MAPBOX_ACCESS_TOKEN="pk.eyJ1IjoicHJlZXZlOTUzNCIsImEiOiJjamdzMndiYWUwaHBtMnhzM3ByNzQ2Nnd3In0.afYS2Tk3E5PKxWfvnqxhuw"
+MAPBOX_MAPSIZE="800x400"
+MAPBOX_POSITION="auto"
+MAPBOX_QUERY="https://api.mapbox.com/styles/v1/mapbox/streets-v11/static"
+NOMINATUM_QUERY="https://nominatim.openstreetmap.org/reverse?format=json&"
+
+
+dateminutes() {
+    local h=$(${DATE} --utc -d "${1}" '+%_H')
+    local m=$(${DATE} --utc -d "${1}" '+%_M')
+    local s=$(${DATE} --utc -d "${1}" '+%_S')
+    echo "$(( (${h} * 60) + ${m} ))"
+}
+
+minutes2hm() {
+    local h=$(( ${1} / 60 ))
+    local m=$(( ${1} - (${h} * 60) ))
+    echo "${h}:${m}"
+}
+
+# Normalise a value destined for the log file into the required standard
+# format.
+#
+# ${1} - token defining the type of log entry (e.g. ENGINE, POSITION, etc.)
+# ${2} - raw value to be stored (from Signal K)
+#
+normalise() {
+    if [ "${1}" ] && [ "${2}" ] ; then
+        case ${1} in
+            ENGINE | GENERATOR | WEATHER)
+                echo "${2}"
+                ;;
+            TANKLEVEL | BATTERYSTATE)
+                echo "$(echo "a=${2};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)"
+                ;;
+            POSITION)
+                local lat=$(echo "${2}" | ${JQ} -j '.latitude')
+                local lon=$(echo "${2}" | ${JQ} -j '.longitude')
+                echo '{ "latitude": '$( echo "a=${lat};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)', "longitude": '$( echo "a=${lon};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)' }'
+                ;;
+             VESSEL)
+                local out=$( echo "${2}" | ${JQ} -j '.[] | select(.name | length > 0) | "{ \"mmsi\": \"" + .mmsi + "\", \"name\": \"" + .name + "\", \"position\": " + (.navigation.position.value|tostring) + " }\n"' )
+                echo "${out}"
+                ;;
+            *)
+                echo ""
+                ;;
+        esac
+    fi
+    echo ""
+}
+
+# Compare two log entries for equivalence, returning 0 if equal, otherwise 1.
+#
+# ${1} - token defining the type of log entry (e.g. ENGINE, POSITION, etc.)
+# ${2} - first log value
+# ${3} - second log value
+# ${4} - engine state (0 or 1) - comparison may depend upon this...
+#
+compare() {
+    if [ "${1}" ] && [ "${2}" ] && [ "${3}" ] && [ "${4}" ] ; then
+        case ${1} in
+            ENGINE | TANKLEVEL | BATTERYSTATE)
+                if [ "${2}" == "${3}" ] ; then
+                    return 0
+                else
+                    return 1
+                fi
+                ;;
+            POSITION)
+                local places=$(( 3 + ${4} ))
+                local flat=$(printf "%.${places}f " $(echo "${2}" | ${JQ} -j '.latitude'))
+                local flon=$(printf "%.${places}f " $(echo "${2}" | ${JQ} -j '.longitude'))
+                local slat=$(printf "%.${places}f " $(echo "${3}" | ${JQ} -j '.latitude'))
+                local slon=$(printf "%.${places}f " $(echo "${3}" | ${JQ} -j '.longitude'))
+                if [ "${flat}" == "${slat}" ] && [ "${flon}" == "${slon}" ] ; then
+                    return 0
+                else
+                    return 1
+                fi
+                ;;
+        esac
+    fi
+    return 2
+}

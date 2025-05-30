@@ -1,0 +1,59 @@
+#!/bin/bash
+#
+# NAME
+#   log-metar - recover a METAR for here and now.
+#
+# SYNOPSIS
+#   log-metar [-o]
+#   log-stops -h
+#
+# DESCRIPTION
+#   Recover a METAR for the most recent position recorded in today's
+#   log file and write it to standard output.
+#
+#   Options
+#
+#   -h  display this documentation.
+#
+#   -l  append the METAR to today's log file instead of writing to
+#       standard output.
+#
+# AUTHOR
+#   Paul Reeve <preeve@pdjr.eu>
+
+source log.defs
+
+while [ "${1}" != "" ] ; do
+  case ${1} in
+    -h)
+      ${GREP} '^#' ${0}
+      exit 0
+      ;;
+    -l)
+      OUTFILE=${LOGDIR}$
+      ;;
+    *)
+      LOGFILESPEC=$1;
+      ;;
+  esac
+  shift
+done
+
+if [ ! ${LOGFILESPEC} ] ; then LOGFILESPEC=$(${DATE} +%Y%m%d) ; fi
+
+COORDINATE=$(${LOGPOSITIONS} ${LOGFILESPEC} | ${TAIL} -1)
+    
+latitude=$(${JQ} -j '.latitude' <<<${COORDINATE});
+longitude=$(${JQ} -j '.longitude' <<<${COORDINATE});
+
+if [ ${latitude} ] ; then
+  QUERYURL="${CHECKWX_API_URL}metar/lat/${latitude}/lon/${longitude}"
+  METAR=$(${CURL} -s "${QUERYURL}" -H "X-API-Key: ${CHECKWX_API_KEY}" | ${JQ} -j '.data[0]')
+  if [ ${OUTFILE} ] ; then
+    OUTFILE="${OUTFILE}${LOGFILESPEC}"
+    ZULU=$(${DATE} +'%Y-%m-%dT%H:%M:%S')
+    echo "${ZULU}Z [${ZULU}.000Z] WEATHER Metar ${METAR}" >> ${OUTFILE}
+  else
+    echo ${METAR}
+  fi
+fi

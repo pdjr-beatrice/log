@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# NAME
+#   log-trip - recover distance travelled from log.
+#
+# SYNOPSIS
+#   log-trip [logfile...]
+#   log-trip -h
+#
+# DESCRIPTION
+#   If the script is invoked with no arguments, then it will operate as
+#   if it had been called with a single logfile argument set to the
+#   value YYYYMMDD that represents the current day.
+#
+#   Prints to standard output the distance in kilometres travelled
+#   calculated by applying the Haversine formula to adjacent positions
+#   and summing the results.
+#
+#   The following options are understood:
+#
+#   -h  print this documentation;
+#
+# AUTHOR
+#   Paul Reeve <preeve@pdjr.eu>
+
+source log.defs
+
+LOGFILEARGS=
+
+while  [ "${1}" != "" ] ; do
+  case ${1} in
+    -h)
+      ${GREP} '^#' ${0}
+      exit 0
+      ;;
+    *)
+      LOGFILEARGS="${LOGFILEARGS} ${1}"
+      ;;
+  esac
+  shift
+done
+
+if [ ! ${LOGFILEARGS} ] ; then LOGFILEARGS=$(${DATE} +%Y%m%d) ; fi
+
+echo $(${LOGPOSITIONS} ${LOGFILEARGS} | ${PYTHON} ${LOGTRIPSCRIPT})
