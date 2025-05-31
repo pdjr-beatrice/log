@@ -5,11 +5,14 @@ log used on BEATRICE OF HULL.
 
 ## log-system
 
-Consists of a collection of (mostly) `bash` scripts which create, maintain
-and process a ship's log, sourcing data in real-time from one or more Signal
-K servers using the Signal K REST API.
+This folder contains a collection of scripts which create, maintain
+and process a ship's log Log data is sourced in real-time from one or
+more Signal K servers using the Signal K REST API.
 
-On BEATRICE the log system runs on a Raspberry Pi which implements the vessel's
+The system was designed to run on a Raspberry Pi and has modest resource
+requirements, happily working alongside other services and applications.
+
+alongside other which implements the vessel's
 LTE gateway (and is available 24/7), reaching out to the ship's Signal K server
 which executes on a Victron Cerbo-GX. A typical log system generates around 10Mb
 ofvlog files per annum.
