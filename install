@@ -1,0 +1,54 @@
+#!/bin/bash
+
+LOG_FOLDER=log/
+WORDPRESS_FOLDER=wordpress/
+SYMBOLIC=
+FORCE=
+
+if [ "${1}" == "" ] ; then
+  echo "usage: install [-s] [-f] ( log | wordpress )"
+  exit 1
+fi
+
+while [ "${1}" != "" ] ; do
+  case ${1} in
+    -s)
+      SYMBOLIC=yes
+      echo "install: installing by symbolic link"
+      ;;
+    -f)
+      FORCE=yes
+      ;;
+    log)
+      if [ -d "${LOG_FOLDER}" ] ; then
+        cd "${LOG_FOLDER}"
+        for INSTALL_DIR_PATTERN in * ; do
+          INSTALL_DIR="/${INSTALL_DIR_PATTERN//\.//}"
+          pushd "${INSTALL_DIR_PATTERN}" > /dev/null
+            for SCRIPT_NAME in * ; do
+              SCRIPT_PATHNAME=$( realpath ${SCRIPT_NAME} )
+              pushd "${INSTALL_DIR}" > /dev/null
+              if [ "${FORCE}" == "yes" ] ; then
+                rm -f ${SCRIPT_NAME}
+              fi
+              if [ "${SYMBOLIC}" == "yes" ] ; then
+                echo "install: linking ${INSTALL_DIR}/${SCRIPT_NAME}"
+                ln -s "${SCRIPT_PATHNAME}" .
+              else
+                echo "install: copying ${INSTALL_DIR}/${SCRIPT_NAME}"
+                cp "${SCRIPT_PATHNAME}" .
+              fi
+              chmod 755 "${SCRIPT_NAME}"
+              popd > /dev/null
+            done
+          popd > /dev/null
+        done
+      fi
+      ;;
+    wordpress)
+      ;;
+    *)
+      ;;
+  esac
+  shift
+done
