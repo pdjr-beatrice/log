@@ -1,0 +1,103 @@
+#!/bin/bash
+#
+# NAME
+#   log-get - get the value field from selected log file records.
+#
+# SYNOPSIS
+#   log-get [-{f|l}] regex [logfile...]
+#   log-get -h
+#
+# DESCRIPTION
+#   If the script is invoked with no arguments, then it will operate as
+#   if it had been called with a single logfile argument set to the
+#   value YYYYMMDD that represents the current day.
+#
+#   Otherwise, each logfile argument is a log file specifier of the
+#   form:
+#
+#   YYYY selects all the log files for the specified year;
+#   YYYYMM selects all the log files for the specified month;
+#   YYYYMMDD selects the log file for the specified day.
+#
+#   The selected log files are concatenated and filtered to extract
+#   records matching regex and the contained value fields are returned
+#   as a list.
+#
+#   The script supports the following command line options:
+#
+#   -f  restricts output to just the first selected record.
+#
+#   -h  displays this documentation.
+#
+#   -l  restricts output to just the last selected record.
+#
+#   -p  convert ratio values to percentages
+#
+# AUTHOR
+#   Paul Reeve <preeve@pdjr.eu>
+
+source log.defs
+
+FILESPECS=
+FILESPEC=
+PATTERN=
+RESTRICTION=
+PERCENT=
+
+while [ "$1" != "" ] ; do
+  case $1 in
+    -f)
+      RESTRICTION="first"
+      ;;
+    -h)
+      ${GREP} '^#' ${0}
+      exit 0
+      ;;
+    -l)
+      RESTRICTION="last"
+      ;;
+    -p)
+      PERCENT=yes
+      ;;
+    *)
+      if [ "${PATTERN}" == "" ] ; then
+        PATTERN="${1}"
+      else
+        FILESPEC=${1}
+        while [ ${#FILESPEC} -lt 8 ] ; do FILESPEC=${FILESPEC}'?' ; done
+        FILESPECS="${FILESPECS} ${LOGDIR}${FILESPEC}"
+      fi
+      ;;
+  esac
+  shift
+done
+
+if [ ! "${PATTERN}" ] ; then
+  echo "usage: log-get [-{f|l}] [-p] regex logfilespec..."
+  echo "usage: log-get -h"
+  exit 1
+fi
+
+if [ ! ${FILESPECS} ] ; then FILESPECS="${LOGDIR}$(${DATE} +'%Y%m%d')" ; fi
+
+RECORDS=$(${CAT} ${FILESPECS} | ${GREP} "${PATTERN}" | ${CUT} -d ' ' -f5-) 
+
+if [ "${PERCENT}" == "yes" ] ; then
+  PROCESSEDRECORDS=
+  while read -r record ; do
+    PROCESSEDRECORDS="${PROCESSEDRECORDS}"$(echo "scale=0; (${record} * 100) / 1" | ${BC})$'\n'
+  done <<< "${RECORDS}"    
+  RECORDS="${PROCESSEDRECORDS}"
+fi
+
+case $RESTRICTION in
+  first)
+    echo -n "${RECORDS}" | ${HEAD} -1
+    ;;
+  last)
+    echo -n "${RECORDS}" | ${TAIL} -1
+    ;;
+  *)
+    echo "${RECORDS}"
+    ;;
+esac

@@ -1,0 +1,46 @@
+#!/bin/bash
+# NAME
+#   log - convenience interface for executing a log script
+# SYNOPSIS
+#   log [logfile] command [command-options...]
+# DESCRIPTION
+#   log provides a convenient interface for executing log system scripts,
+#   defining some system wide defaults which makes execution of individual
+#   scripts reliably consistent and less wordy.
+#
+#   When executed through log, commands will process log files located in
+#   the directory defined by LOGDIR. If logfile is not specified on the command
+#   line, then it will default to "${LOGDIR}YYYMMMDD" where YYYMMDD is derived
+#   from the current date.
+#
+#   command is the name of one of the log system scripts without the "log-"
+#   prefix.  You can get a list of the avalable commands by executing log with
+#   no arguments.
+#
+#   command-options are those options you would like to pass to your chosen
+#   command (other than the name of the log file to be processed which is
+#   supplied automatically).
+# EXAMPLES
+#   $> log update
+#   $> log hours generator
+#   $> log tabulate -d pdjr-table
+
+source log.defs
+
+if [ "${1}" == "" ] ; then
+    echo -e "usage: log log-script [script-options...]"
+    echo -n "  where command is one of:"
+    for name in ${BINDIR}log-* ; do echo -n " ${name#*-}" ; done
+    echo ""
+    exit 1
+else
+    LOGSCRIPT="${BINDIR}log-${1}"
+    if [ ! -f "${LOGSCRIPT}" ] ; then
+        echo "$(${BASENAME} ${0}): bad or missing log script \"${LOGSCRIPT}\""
+        exit 2
+    fi
+fi
+
+LOGFILE="$(${DATE} '+%Y%m%d')"
+
+${LOGSCRIPT} ${2} ${3} ${4} ${5} ${LOGFILE}
