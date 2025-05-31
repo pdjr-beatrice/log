@@ -10,6 +10,7 @@ if [ -d "${LOG_HOST_FOLDER}" ] ; then
     for name in * ; do
       sourcename=$( realpath ${name} )
       pushd "${targetdir}" > /dev/null
+      rm $name
       ln -s "${sourcename}" .
       chmod 755 "${name}"
       popd > /dev/null
