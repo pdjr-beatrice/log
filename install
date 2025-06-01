@@ -5,7 +5,9 @@ WORDPRESS_SOURCE_DIRECTORY=wordpress/
 
 SYMBOLIC=
 TARGET_DIRECTORY=
-UNINSTALL_SCRIPT="/usr/local/bin/log-uninstall"
+UNINSTALL_SCRIPT_DIRECTORY="/usr/local/bin/"
+UNINSTALL_SCRIPT_NAME="log-uninstall"
+declare -a UNINSTALL_SCRIPT
 
 if [ "${1}" == "" ] ; then
   echo "usage: install [-s] ( log_directory | wordpress_directory )"
@@ -47,9 +49,8 @@ else
   fi
 fi
 
-rm "${UNINSTALL_SCRIPT}"
-echo "#!/bin/bash" > "${UNINSTALL_SCRIPT}"
-chmod 755 "${UNINSTALL_SCRIPT}"
+UNINSTALL_SCRIPT+=("#!/bin/bash")
+UNINSTALL_SCRIPT+=("rm \"${UNINSTALL_SCRIPT_DIRECTORY}${UNINSTALL_SCRIPT_NAME}\"")
     
 if [ -d "${SOURCE_DIRECTORY}" ] ; then
   cd "${SOURCE_DIRECTORY}"
@@ -60,7 +61,7 @@ if [ -d "${SOURCE_DIRECTORY}" ] ; then
       SCRIPT_PATHNAME=$( realpath ${SCRIPT_NAME} )
       pushd "${INSTALL_DIR}" > /dev/null
       rm -f ${SCRIPT_NAME}
-      echo "rm \"${INSTALL_DIR}${SCRIPT_NAME}\"" >> "${UNINSTALL_SCRIPT}"
+      UNINSTALL_SCRIPT+=("rm \"${INSTALL_DIR}${SCRIPT_NAME}\"")
       if [ "${SYMBOLIC}" == "yes" ] ; then
         ln -s "${SCRIPT_PATHNAME}" .
       else
@@ -73,5 +74,7 @@ if [ -d "${SOURCE_DIRECTORY}" ] ; then
   done
 fi
 
-echo "rm \"${UNINSTALL_SCRIPT}\"" >> "${UNINSTALL_SCRIPT}"
-
+if [ -d "${UNINSTALL_SCRIPT_DIRECTORY}" ] ; then
+  printf "%s\n" "${UNINSTALL_SCRIPT[@]}" > "${UNINSTALL_SCRIPT_DIRECTORY}${UNINSTALL_SCRIPT_NAME}"
+  chmod 755 "${UNINSTALL_SCRIPT_DIRECTORY}${UNINSTALL_SCRIPT_NAME}"
+fi
