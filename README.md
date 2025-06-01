@@ -45,5 +45,3 @@ $> sudo ./install /var/log/shipslog
 In either case, if the directory `/usr/local/bin/` exists, the script
 `/usr/local/bin/log-uninstall` is created and this can subsequently be
 used to uninstall a previously installed collection.
-
-
