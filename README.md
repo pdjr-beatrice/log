@@ -1,22 +1,22 @@
 # log
 
-This repository contains code implementing the automated ship's log
-used on BEATRICE OF HULL.
+This repository contains code implementing an automated ship's log
+and consists of two collections:
 
-## Log system
+1. The log system itself which should be installed on the host vessel,
+   co-located on the LAN (or even the machine) hosting the ship's
+   Signal K server.
 
-The log system itself consists of a collection of `bash` scripts which
-create, maintain and process a ship's log using data sourced in
-real-time from one or more Signal K servers.
+   The log system is a collection of `bash` scripts which create,
+   maintain and process an archive of ship's daily log files.
 
-The production system should be run on a device on the host vessel,
-co-located on the LAN (or even the machine) hosting the ship's Signal K
-server.
-The system is designed to run on a Raspberry Pi and has modest resource
-requirements allowing it to work alongside other services and
-applications.
+2. A handful of `php` scripts which can be installed on a WordPress
+   site to provide support for the display of log system data.
 
 ### Basic installation
+
+Installation of the log system and the WordPress extensions is most
+easily accomplished by 
 Login to the computer that will host the log system.
 ```
 $> cd
