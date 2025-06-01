@@ -70,15 +70,13 @@ $> sudo git clone https://github.com/pdjr-beatrice/log.git
 $> cd log
 $> sudo install wordpress_folder
 ```
+Where *wordpress_folder* is the root directory of the WordPress site
+(the directory containing `wp-config.php`).
 
 ### To uninstall
-
-### Installation example
 ```
-$> cd /opt
-$> sudo make install-wordpress
+$> sudo log-uninstall
 ```
-
-## Makefile
+All installed script files will be deleted (or unlinked).  
 
 
