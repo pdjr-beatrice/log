@@ -1,6 +1,4 @@
-# NAME
-
-log-atrest - check whether a log show's the vessel was at rest.
+# log-atrest - check whether a log show's the vessel was at rest.
 
 ## SYNOPIS
 
