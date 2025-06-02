@@ -15,8 +15,6 @@ and consists of two collections:
    [website](https://www.pdjr.eu/)
    is an example.
 
-<iframe src=""></iframe>
-
 ### Basic installation
 
 Installation of either collection is most easily accomplished by
