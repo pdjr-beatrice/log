@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # NAME
-#   log-atrest - check a log file an report if vessel was at rest.
+#   log-atrest - check a log file and report if vessel was at rest.
 #
 # SYNOPSIS
 #   log-atrest [-v] [logfile]
@@ -28,7 +28,7 @@
 
 source log.defs
 
-LOGFILENAME=$(${DATE} +%Y%m%d)
+LOGFILENAME=$( ${DATE} +%Y%m%d )
 
 while  [ "${1}" != "" ] ; do
   case ${1} in
@@ -45,6 +45,8 @@ while  [ "${1}" != "" ] ; do
   esac
   shift
 done
+
+if [ ! -f "${LOGDIR}${LOGFILENAME}" ] ;  then echo "log-atrest: bad or missing log file" ; exit 9 ; fi
 
 POSITIONS="$(${LOGPOSITIONS} ${LOGFILENAME})"
 POSITIONCOUNT=$(${GREP} -c '^' <<< "${POSITIONS}")

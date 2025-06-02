@@ -15,25 +15,29 @@ and consists of two collections:
    [website](https://www.pdjr.eu/)
    is an example.
 
-### Basic installation
+## Basic installation
 
 Installation of either collection is most easily accomplished by
 logging in to the computer that will host the required collection and
 cloning this repository.
-```
+
+```bash
 $> git clone https://github.com/pdjr-beatrice/log.git
 $> cd log
 ```
 
 The `install` script takes an absolute directory name as its only
 argument.
-```
+
+```bash
 $> sudo ./install directory
 ```
+
 If *directory* specifies a WordPress installation root directory then
 the wordpress collection is installed.
 For example:
-```
+
+```bash
 $> sudo ./install /var/www/wordpress
 ```
 
@@ -41,7 +45,8 @@ Otherwise, *directory* is assumed to specify the folder which should
 be used as the log system's log file archive: this folder will be
 created if it doen't exist and the log collection scripts installed.
 For example:
-```
+
+```bash
 $> sudo ./install /var/log/shipslog
 ```
 
