@@ -11,8 +11,11 @@ and consists of two collections:
 2. The `wordpress` collection is a handful of `php` scripts which can
    be installed on a WordPress site to provide support for the display
    of log system data.
+   BEATRICE's
+   [website](https://www.pdjr.eu/)
+   is an example.
 
-<iframe src="https://www.pdjr.eu/"></iframe>
+<iframe src=""></iframe>
 
 ### Basic installation
 
