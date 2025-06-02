@@ -1,4 +1,6 @@
-# log-atrest - check whether a log show's the vessel was at rest.
+# log-atrest
+
+Check whether a day's log show's that the vessel was at rest.
 
 ## SYNOPIS
 
