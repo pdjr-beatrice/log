@@ -2,14 +2,14 @@
 
 Check whether a day's log show's that the vessel was at rest.
 
-## SYNOPIS
+## Usage
 
 ```bash
 $> log-atrest -h
 $> log-atrest [-v] [yyyymmdd]
 ```
 
-## DESCRIPTION
+## Description
 
 `log-atrest` examines the log file specified by *yyyymmdd* and sets its
 exit value to 0 if position information shows that the vessel did not
