@@ -85,7 +85,7 @@ minutes2hm() {
 normalise() {
     if [ "${1}" ] && [ "${2}" ] ; then
         case ${1} in
-            ENGINE | GENERATOR | WEATHER)
+            ENGINE | GENERATOR | SWITCH | WEATHER)
                 echo "${2}"
                 ;;
             TANKLEVEL | BATTERYSTATE)
