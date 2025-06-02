@@ -12,6 +12,8 @@ and consists of two collections:
    be installed on a WordPress site to provide support for the display
    of log system data.
 
+   <iframe src="https://www.pdjr.eu/"></iframe>
+
 ### Basic installation
 
 Installation of either collection is most easily accomplished by
