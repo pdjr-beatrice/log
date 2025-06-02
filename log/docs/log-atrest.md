@@ -11,9 +11,8 @@ $> log-atrest [-v] [yyyymmdd]
 
 ## DESCRIPTION
 
-`log-atrest` examines the log file specified by *yyyymmdd* (or the most
-recent log file in the log archive if not specified) and sets its exit
-value to 0 if position information in the log shows the vessel did not
+`log-atrest` examines the log file specified by *yyyymmdd* and sets its
+exit value to 0 if position information shows that the vessel did not
 navigate on the selected day or to 1 if position information indicates
 that the vessel moved.
 
