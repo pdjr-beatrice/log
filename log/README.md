@@ -1,7 +1,5 @@
 # log system
 
-## Operation
-
 The log system creates, maintains and processes a collection of daily
 log files in the directory specified by *LOGDIR*.
 Each day a new file with the name *YYYYMMDD* is created at 00:00Z,
@@ -19,12 +17,33 @@ time intervals.
 
 The following example `log.cfg` consists of three paragraphs.
 
+The *INIT* paragraph is automatically executed before any user defined
+paragraphs when a new daily log file is created.
+This will result in two entries at the start of every daily log
+recording the state of charge of the domestic battery bank and the
+position of the vessel.
+
+*RUN* and *CLOSE* are user-defined names for paragraphs which will only
+be executed when their names are passed as arguments to `log-update`.
+
+The *RUN* paragraph logs the current engine state and if this is 1 (on)
+then logs the position of the vessel.
+The pragraph will only be executed when it is explicitly named as an
+argument to `log-update`; repeatedly executing the command
+`log-update run` will record the vessel's track when the engine is
+running.
+As a general point, note that `log-update` only writes an entry to the
+log file when the entry differs from the most recently recorded value,
+so the log will not fill with repeated entries noting engine on.
+
+The *CLOSE* paragraph logs the domestic battery state and will only
+be executed when it is explicitly named as an argument to `log-update`.
 ```
-[OPEN]
+[INIT]
 BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/batteries/278/capacity/stateOfCharge
 POSITION Position http://192.168.1.1:3000/signalk/v1/api/vessels/self/navigation/position
 
-[MINUTE]
+[RUN]
 ENGINE State http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/switches/bank/16/16/state
 >POSITION Position http://192.168.1.1:3000/signalk/v1/api/vessels/self/navigation/position
 
@@ -32,4 +51,13 @@ ENGINE State http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/swit
 BATTERYSTATE Domestic http://192.168.1.1:3000/signalk/v1/api/vessels/self/electrical/batteries/278/capacity/stateOfCharge
 ```
 
-### Daily log file  
+A typical approach to log file generation is to use the host system's
+cron mechanism to automatically execute `log-update`.
+The following entries in `/etc/crontab` are suitable for the log
+configuration discussed above.
+```
+*/1 *    * * *   root    /usr/local/bin/log-update run >/dev/null 2>/dev/null
+59  23   * * *   root    /usr/local/bin/log-update close  >/dev/null 2>/dev/null
+```
+
+

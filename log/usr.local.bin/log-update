@@ -9,7 +9,7 @@
 #   log-update [-c config-file] [-d log-directory] [-f] [-v] [-h] paragraph...
 #
 # DESCRIPTION
-#   Update today's logfile by processing a paragraph defined in the log
+#   Update today's LOGFILE_NAME by processing a paragraph defined in the log
 #   configuration file.
 
 source log.defs
@@ -22,6 +22,7 @@ LOGDIR=${LOGDIR}
 FORCE=
 PARAGRAPH_NAMES=
 VERBOSE=
+UTC=
 
 while [ "${1}" != "" ] ; do
     case ${1} in
@@ -33,53 +34,39 @@ while [ "${1}" != "" ] ; do
             shift
             LOGDIR="${1}"
             ;;
-    	-f) # Force
-	        FORCE="yes"
-	        ;;
         -h) # Display usage message
-	        ${GREP} '^#' ${0}
-	        exit 0
+	          ${GREP} '^#' ${0}
+	          exit 0
             ;;
         -v) # Display entries written to log
             VERBOSE="yes"
             ;;
+        -z) # Perform all processing in UTC
+            UTC=-u
+            ;;
         *)  # Paragraph name
-	        PARAGRAPH_NAMES="${PARAGRAPH_NAMES} ${1^^}"
+	          PARAGRAPH_NAMES="${PARAGRAPH_NAMES} ${1^^}"
             ;;
     esac
     shift
 done
 
-if [ "${CONFIGFILE}" == "" ] ; then 
-    echo "log-update: the -c option requires an argument"
-    exit 1
-else
-    if [ ! -f "${CONFIGFILE}" ] ; then
-        echo "log-update: bad or missing configuration file '${CONFIGFILE}'"
-        exit 3
-    fi
-fi
+if [ "${CONFIGFILE}" == "" ] ; then echo "log-update: the -c option requires an argument" ; exit 1 ; fi
+if [ "${LOGDIR}" == "" ] ; then echo "log-update: the -d option requires an argument" ; exit 1 ; fi
 
-if [ "${LOGDIR}" == "" ] ; then 
-    echo "log-update: the -d option requires an argument"
-    exit 1
-else
-    if [ ! -d "${LOGDIR}" ] ; then
-        echo "log-update: bad or missing log directory '${LOGDIR}'"
-        exit 1
-    fi
-fi
+if [ ! -f "${CONFIGFILE}" ] ; then echo "log-update: bad or missing configuration file '${CONFIGFILE}'" ; exit 3 ; fi
+if [ ! -d "${LOGDIR}" ] ; then echo "log-update: bad or missing log directory '${LOGDIR}'" ; exit 1 ; fi
 
-LOGFILE=$( ${DATE} '+%Y%m%d' )
-LOGPATHNAME=${LOGDIR}${LOGFILE}
-LOGDATE=$( ${DATE} --utc +%FT%TZ )
+LOGFILE_NAME=$( ${DATE} ${UTC} '+%Y%m%d' )
+LOGFILE_PATH="${LOGDIR/\/$//}/${LOGFILE_NAME}"
+LOGDATE=$( ${DATE} ${UTC} +%FT%TZ )
 CONFIG=$( ${CAT} ${CONFIGFILE} )
 DOIT=0
 
-# If the logfile doesn't exist, then arrange for the init paragraph
+# If the LOGFILE_NAME doesn't exist, then arrange for the init paragraph
 # to be executed first.
 #
-if [ ! -f "${LOGPATHNAME}" ] ; then PARAGRAPH_NAMES="init ${PARAGRAPH_NAMES}" ; fi
+if [ ! -f "${LOGFILE_PATH}" ] ; then PARAGRAPH_NAMES="init ${PARAGRAPH_NAMES}" ; fi
 
 for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
     RULES=$(${SED} -n "/\[${PARAGRAPH_NAME}\]/,/^$/p" <<< "${CONFIG}" | ${TAIL} -n '+2')
@@ -134,16 +121,16 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
                 fi
 
 	        LASTLOGVALUE=
-	        if [ -f ${LOGPATHNAME} ] ; then
-          	    LASTLOGVALUE=$(${GREP} "${TOKEN} ${ITEM_LABEL}" "${LOGPATHNAME}" | ${TAIL} -1 | ${CUT} -d ' ' -f5-)
+	        if [ -f ${LOGFILE_PATH} ] ; then
+          	    LASTLOGVALUE=$(${GREP} "${TOKEN} ${ITEM_LABEL}" "${LOGFILE_PATH}" | ${TAIL} -1 | ${CUT} -d ' ' -f5-)
                 fi
  
                 # If there isn't a prior value, then just save this new one...
                 if [[ "${LASTLOGVALUE}" == "" ]] ; then
-               	    echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${ITEM_LABEL} ${SIGNALK_ITEM}" >> ${LOGPATHNAME}
+               	    echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${ITEM_LABEL} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
                 else
                     if [[ "${LASTLOGVALUE}" != "${SIGNALK_ITEM}" ]] && [[ "${ITEM_IS_UNIQUE}" != "yes" ]] ; then
-               	        echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${ITEM_LABEL} ${SIGNALK_ITEM}" >> ${LOGPATHNAME}
+               	        echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${ITEM_LABEL} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
                     fi
                 fi
             done
