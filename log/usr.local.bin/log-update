@@ -5,50 +5,44 @@
 #
 # SYNOPSIS
 #   log-update
-#   log-update paragraph...
-#   log-update [-c config-file] [-d log-directory] [-f] [-v] [-h] paragraph...
+#   log-update [-c config-file] [-d log-directory] [-v] [-z] [paragraph...]
 #
 # DESCRIPTION
-#   Update today's LOGFILE_NAME by processing a paragraph defined in the log
-#   configuration file.
+#   Update today's log file by processing one or more paragraphs
+#   defined in a log configuration file.
 
 source log.defs
 
 CONFIGFILE=""
 for name in /etc/log.cfg /usr/local/etc/log.cfg ./log.cfg ; do
-    if [ -f "${name}" ] ; then CONFIGFILE=${name} ; fi
+  if [ -f "${name}" ] ; then CONFIGFILE=${name} ; fi
 done
 LOGDIR=${LOGDIR}
-FORCE=
 PARAGRAPH_NAMES=
-VERBOSE=
 UTC=
 
 while [ "${1}" != "" ] ; do
-    case ${1} in
-        -c) # Command line explicitly specifies a configuration file
-            shift
-            CONFIGFILE="${1}"
-            ;;
-        -d) # Command line explicitly specifies a log directory
-            shift
-            LOGDIR="${1}"
-            ;;
-        -h) # Display usage message
-	          ${GREP} '^#' ${0}
-	          exit 0
-            ;;
-        -v) # Display entries written to log
-            VERBOSE="yes"
-            ;;
-        -z) # Perform all processing in UTC
-            UTC=-u
-            ;;
-        *)  # Paragraph name
-	          PARAGRAPH_NAMES="${PARAGRAPH_NAMES} ${1^^}"
-            ;;
-    esac
-    shift
+  case ${1} in
+    -c) # Command line explicitly specifies a configuration file
+        shift
+        CONFIGFILE="${1}"
+        ;;
+    -d) # Command line explicitly specifies a log directory
+        shift
+        LOGDIR="${1}"
+        ;;
+    -h) # Display usage message
+	      ${GREP} '^#' ${0}
+	      exit 0
+        ;;
+    -z) # Perform all processing in UTC
+        UTC=-u
+        ;;
+    *)  # Paragraph name
+	      PARAGRAPH_NAMES="${PARAGRAPH_NAMES} ${1^^}"
+        ;;
+  esac
+  shift
 done
 
 if [ "${CONFIGFILE}" == "" ] ; then echo "log-update: the -c option requires an argument" ; exit 1 ; fi
@@ -69,71 +63,71 @@ DOIT=0
 if [ ! -f "${LOGFILE_PATH}" ] ; then PARAGRAPH_NAMES="init ${PARAGRAPH_NAMES}" ; fi
 
 for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
-    RULES=$(${SED} -n "/\[${PARAGRAPH_NAME}\]/,/^$/p" <<< "${CONFIG}" | ${TAIL} -n '+2')
+  RULES=$(${SED} -n "/\[${PARAGRAPH_NAME}\]/,/^$/p" <<< "${CONFIG}" | ${TAIL} -n '+2')
 
-    LASTTOPLEVELVALUE="ADUMMYVALUE"
-    while read -r TOKEN LABEL SIGNALKPATH; do
-        SIGNALK_VALUE="${SIGNALK_PATH}"
+  LASTTOPLEVELVALUE="ADUMMYVALUE"
+  while read -r TOKEN LABEL SIGNALKPATH; do
+    SIGNALK_VALUE="${SIGNALK_PATH}"
+    if [[ "${SIGNALKPATH}" == "http:"* ]] ; then
+      SIGNALK_VALUE=$( ${WGET} -q -O - ${SIGNALKPATH} | tr -d '\012' )
+      if [[ $( ${JQ} -j 'has("value")' <<<"${SIGNALK_VALUE}" ) == true ]] ; then SIGNALK_VALUE=$( ${JQ} -j '.value' <<<"${SIGNALK_VALUE}" | tr -d '\012' ) ; fi 
+    fi
+ 
+    if [[ ( ${TOKEN} == \!* ) ]] ; then
+      TOKEN=${TOKEN:1}
+      ITEM_IS_UNIQUE=yes
+    fi
+
+    if [[ ( ${TOKEN} == \>* ) ]] ; then
+      TOKEN=${TOKEN:1}
+      if [ "${DOIT}" == "1" ] ; then
+        SIGNALK_VALUE=$(normalise "${TOKEN}" "${SIGNALK_VALUE}")
+      else
+        SIGNALK_VALUE=
+      fi
+    else
+      SIGNALK_VALUE=$(normalise "${TOKEN}" "${SIGNALK_VALUE}")
+      if [ "${SIGNALK_VALUE}" == "1" ] ; then
+        DOIT=1
+      else
+        DOIT=0
+      fi
+    fi
+
+    if [ "${SIGNALK_VALUE}" ] ; then
+      readarray -t SIGNALK_ITEMS <<<${SIGNALK_VALUE}
+      for SIGNALK_ITEM in "${SIGNALK_ITEMS[@]}" ; do 
+
+        # If LABEL normally supplies the log item ITEM_LABEL, but if
+        # it begins with a '$', then it specifies a JSON field name
+        # whose value should be used as the ITEM_LABEL.
+        ITEM_LABEL=${LABEL}
+        if [[ "${LABEL}" == "$"* ]] ; then
+          ITEM_LABEL=$( ${JQ} -j ".${LABEL:1}" <<<${SIGNALK_ITEM} )
+        fi
+
+        TIMESTAMP=
         if [[ "${SIGNALKPATH}" == "http:"* ]] ; then
-            SIGNALK_VALUE=$( ${WGET} -q -O - ${SIGNALKPATH} | tr -d '\012' )
-            if [[ $( ${JQ} -j 'has("value")' <<<"${SIGNALK_VALUE}" ) == true ]] ; then SIGNALK_VALUE=$( ${JQ} -j '.value' <<<"${SIGNALK_VALUE}" | tr -d '\012' ) ; fi 
+          TIMESTAMP=$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.timestamp' | tr -d '\012')
         fi
- 
-        if [[ ( ${TOKEN} == \!* ) ]] ; then
-            TOKEN=${TOKEN:1}
-            ITEM_IS_UNIQUE=yes
+        if [ ! ${TIMESTAMP} ] ; then 
+          TIMESTAMP=$(${DATE} -Ins) ; TIMESTAMP="${TIMESTAMP%%,*}.000Z"
         fi
 
-    	if [[ ( ${TOKEN} == \>* ) ]] ; then
-            TOKEN=${TOKEN:1}
-            if [ "${DOIT}" == "1" ] ; then
-                SIGNALK_VALUE=$(normalise "${TOKEN}" "${SIGNALK_VALUE}")
-            else
-                SIGNALK_VALUE=
-            fi
+	      LASTLOGVALUE=
+	      if [ -f ${LOGFILE_PATH} ] ; then
+          LASTLOGVALUE=$(${GREP} "${TOKEN} ${ITEM_LABEL}" "${LOGFILE_PATH}" | ${TAIL} -1 | ${CUT} -d ' ' -f5-)
+        fi
+ 
+        # If there isn't a prior value, then just save this new one...
+        if [[ "${LASTLOGVALUE}" == "" ]] ; then
+          echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${ITEM_LABEL} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
         else
-            SIGNALK_VALUE=$(normalise "${TOKEN}" "${SIGNALK_VALUE}")
-            if [ "${SIGNALK_VALUE}" == "1" ] ; then
-                DOIT=1
-            else
-                DOIT=0
-            fi
+          if [[ "${LASTLOGVALUE}" != "${SIGNALK_ITEM}" ]] && [[ "${ITEM_IS_UNIQUE}" != "yes" ]] ; then
+            echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${ITEM_LABEL} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
+          fi
         fi
-
-        if [ "${SIGNALK_VALUE}" ] ; then
-            readarray -t SIGNALK_ITEMS <<<${SIGNALK_VALUE}
-            for SIGNALK_ITEM in "${SIGNALK_ITEMS[@]}" ; do 
-
-                # If LABEL normally supplies the log item ITEM_LABEL, but if
-                # it begins with a '$', then it specifies a JSON field name
-                # whose value should be used as the ITEM_LABEL.
-                ITEM_LABEL=${LABEL}
-                if [[ "${LABEL}" == "$"* ]] ; then
-                    ITEM_LABEL=$( ${JQ} -j ".${LABEL:1}" <<<${SIGNALK_ITEM} )
-                fi
-
-                TIMESTAMP=
-                if [[ "${SIGNALKPATH}" == "http:"* ]] ; then
-                    TIMESTAMP=$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.timestamp' | tr -d '\012')
-                fi
-                if [ ! ${TIMESTAMP} ] ; then 
-                    TIMESTAMP=$(${DATE} -Ins) ; TIMESTAMP="${TIMESTAMP%%,*}.000Z"
-                fi
-
-	        LASTLOGVALUE=
-	        if [ -f ${LOGFILE_PATH} ] ; then
-          	    LASTLOGVALUE=$(${GREP} "${TOKEN} ${ITEM_LABEL}" "${LOGFILE_PATH}" | ${TAIL} -1 | ${CUT} -d ' ' -f5-)
-                fi
- 
-                # If there isn't a prior value, then just save this new one...
-                if [[ "${LASTLOGVALUE}" == "" ]] ; then
-               	    echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${ITEM_LABEL} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
-                else
-                    if [[ "${LASTLOGVALUE}" != "${SIGNALK_ITEM}" ]] && [[ "${ITEM_IS_UNIQUE}" != "yes" ]] ; then
-               	        echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${ITEM_LABEL} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
-                    fi
-                fi
-            done
-        fi
-    done <<< "${RULES}"
+      done
+    fi
+  done <<< "${RULES}"
 done
