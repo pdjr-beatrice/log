@@ -57,7 +57,22 @@ The following entries in `/etc/crontab` are suitable for the log
 configuration discussed above.
 ```
 */1 *    * * *   root    /usr/local/bin/log-update run >/dev/null 2>/dev/null
-59  23   * * *   root    /usr/local/bin/log-update close  >/dev/null 2>/dev/null
+58  23   * * *   root    /usr/local/bin/log-update close  >/dev/null 2>/dev/null
 ```
+
+The first `crontab` entry executes the *RUN* paragraph every minute
+through the day.
+
+The second `crontab` entry executes the *CLOSE* paragraph at one minute
+before midnight to generate closing entries in the ship's log.
+
+On BEATRICE, at the end of each day I use the `log-email` script to post
+the day's log and a derived KML file rendering the vessel's track to my
+remote WordPress site for display.
+This is easily accomplished with an additional `crontab` entry.
+```
+59  23   * * *   root    /usr/local/bin/log-email  >/dev/null 2>/dev/null
+```
+
 
 
