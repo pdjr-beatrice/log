@@ -4,8 +4,10 @@ log-atrest - check whether a log show's the vessel was at rest.
 
 ## SYNOPIS
 
-log-atrest -h
-log-atrest [-v] [yyyymmdd]
+```bash
+$> log-atrest -h
+$> log-atrest [-v] [yyyymmdd]
+```
 
 ## DESCRIPTION
 
