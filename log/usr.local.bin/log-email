@@ -183,5 +183,5 @@ if [ ${#LOGNAME} -eq 8 ] ; then
 fi
 
 if [ "${OPTION_MAKE_KML}" == "yes" ] && [ ${#LOGNAME} -eq 8 ] ; then
-  sudo -u wordpress ${MIMECONSTRUCT} ${EMAIL_SEND} --to "${EMAIL_RECIPIENT}" --subject "${EMAIL_SUBJECT}" --string "${EMAIL_BODY}" --file-attach "${LOG_ATTACHMENT_FILENAME}" --file-attach "$(KML_ATTACHMENT_FILENAME}"
+  sudo -u wordpress ${MIMECONSTRUCT} ${EMAIL_SEND} --to "${EMAIL_RECIPIENT}" --subject "${EMAIL_SUBJECT}" --string "${EMAIL_BODY}" --file-attach "${LOG_ATTACHMENT_FILENAME}" --file-attach "${KML_ATTACHMENT_FILENAME}"
 fi
