@@ -31,7 +31,7 @@
 #
 #   -l  restricts output to just the last selected record.
 #
-#   -p  convert ratio values to percentages
+#   -p  convert ratio values to OPTION_percentages
 #
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
@@ -40,28 +40,28 @@ source log.defs
 
 FILESPECS=
 FILESPEC=
-PATTERN=
-RESTRICTION=
-PERCENT=
+OPTION_REGEX=
+OPTION_RESTRICTION=
+OPTION_PERCENT=
 
 while [ "$1" != "" ] ; do
   case $1 in
     -f)
-      RESTRICTION="first"
+      OPTION_RESTRICTION="first"
       ;;
     -h)
       ${GREP} '^#' ${0}
       exit 0
       ;;
     -l)
-      RESTRICTION="last"
+      OPTION_RESTRICTION="last"
       ;;
     -p)
-      PERCENT=yes
+      OPTION_PERCENT=yes
       ;;
     *)
-      if [ "${PATTERN}" == "" ] ; then
-        PATTERN="${1}"
+      if [ "${OPTION_REGEX}" == "" ] ; then
+        OPTION_REGEX="${1}"
       else
         FILESPEC=${1}
         while [ ${#FILESPEC} -lt 8 ] ; do FILESPEC=${FILESPEC}'?' ; done
@@ -72,7 +72,7 @@ while [ "$1" != "" ] ; do
   shift
 done
 
-if [ ! "${PATTERN}" ] ; then
+if [ ! "${OPTION_REGEX}" ] ; then
   echo "usage: log-get [-{f|l}] [-p] regex logfilespec..."
   echo "usage: log-get -h"
   exit 1
@@ -80,9 +80,9 @@ fi
 
 if [ ! ${FILESPECS} ] ; then FILESPECS="${LOGDIR}$(${DATE} +'%Y%m%d')" ; fi
 
-RECORDS=$(${CAT} ${FILESPECS} | ${GREP} "${PATTERN}" | ${CUT} -d ' ' -f5-) 
+RECORDS=$(${CAT} ${FILESPECS} | ${GREP} "${OPTION_REGEX}" | ${CUT} -d ' ' -f5-) 
 
-if [ "${PERCENT}" == "yes" ] ; then
+if [ "${OPTION_PERCENT}" == "yes" ] ; then
   PROCESSEDRECORDS=
   while read -r record ; do
     PROCESSEDRECORDS="${PROCESSEDRECORDS}"$(echo "scale=0; (${record} * 100) / 1" | ${BC})$'\n'
@@ -90,7 +90,7 @@ if [ "${PERCENT}" == "yes" ] ; then
   RECORDS="${PROCESSEDRECORDS}"
 fi
 
-case $RESTRICTION in
+case $OPTION_RESTRICTION in
   first)
     echo -n "${RECORDS}" | ${HEAD} -1
     ;;

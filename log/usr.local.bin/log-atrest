@@ -20,7 +20,7 @@
 #
 #   -h  print this documentation;
 #
-#   -v  As well as setting EXITVALUE, print to standard out the values
+#   -v  As well as setting EXITVALUE, print to standard out the value
 #       "yes" if the vessel was at rest and "no" if it wasn't.
 #
 # AUTHOR
@@ -46,7 +46,8 @@ while  [ "${1}" != "" ] ; do
   shift
 done
 
-if [ ! -f "${LOGDIR}${LOG_FILENAME}" ] ;  then echo "log-atrest: bad or missing log file" ; exit 9 ; fi
+if [ "${LOG_FILENAME}" == "" ] ; then echo "log-atrest: logfile must be specified"; exit 9 ; fi
+if [ ! -f "${LOGDIR}${LOG_FILENAME}" ] ;  then echo "log-atrest: cannot fine logfile '${LOG_FILENAME}'" ; exit 9 ; fi
 
 POSITIONS="$(${LOGPOSITIONS} ${LOG_FILENAME})"
 POSITIONCOUNT=$(${GREP} -c '^' <<_< "${POSITIONS}")
