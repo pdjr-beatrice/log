@@ -171,17 +171,17 @@ EMAIL_BODY="${EMAIL_BODY}tags: ${WP_TAG},${START},${END}"$'\n'
 EMAIL_BODY="${EMAIL_BODY}${WP_EMAIL_BODY_ANNEX}"$'\n'$'\n'
 
 # Generate KML attachment
-if [ "${OPTION_MAKE_KML}" == "yes" ] then
+if [ "${OPTION_MAKE_KML}" == "yes" ] ; then
   KML_ATTACHMENT_FILENAME="/tmp/${LOGNAME}.kml"
   ${LOGKML} -a ${LOGNAME} > "${KML_ATTACHMENT_FILENAME}"
-  EMAIL_KML_ATTACHMENT_CLAUSE="--file-attach \"${KML_ATTACHMENT_FILENAME}\""
 fi
 
 # Generate log file attachment
 if [ ${#LOGNAME} -eq 8 ] ; then
   LOG_ATTACHMENT_FILENAME="/tmp/${LOGNAME}.log"
   ${CP} "${LOGDIR}${LOGNAME}" "${LOG_ATTACHMENT_FILENAME}"
-  EMAIL_LOG_ATTACHMENT_CLAUSE="--file-attach \"${LOG_ATTACHMENT_FILENAME}\""
 fi
 
-sudo -u wordpress ${MIMECONSTRUCT} ${EMAIL_SEND} --to "${EMAIL_RECIPIENT}" --subject "${EMAIL_SUBJECT}" --string "${EMAIL_BODY}" ${EMAIL_LOG_ATTACHMENT_CLAUSE} ${EMAIL_KML_ATTACHMENT_CLAUSE}
+if [ "${OPTION_MAKE_KML}" == "yes" ] && [ ${#LOGNAME} -eq 8 ] ; then
+  sudo -u wordpress ${MIMECONSTRUCT} ${EMAIL_SEND} --to "${EMAIL_RECIPIENT}" --subject "${EMAIL_SUBJECT}" --string "${EMAIL_BODY}" --file-attach "${LOG_ATTACHMENT_FILENAME}" --file-attach "$(KML_ATTACHMENT_FILENAME}"
+fi

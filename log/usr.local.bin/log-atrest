@@ -28,7 +28,7 @@
 
 source log.defs
 
-LOG_FILENAME=$( ${DATE} '+Ymd' )
+LOG_FILENAME=$( ${DATE} '+%Y%m%d' )
 
 while  [ "${1}" != "" ] ; do
   case ${1} in
@@ -41,16 +41,16 @@ while  [ "${1}" != "" ] ; do
       ;;
     *)
       LOG_FILENAME=${1}
-      ;;_
+      ;;
   esac
   shift
 done
 
 if [ "${LOG_FILENAME}" == "" ] ; then echo "log-atrest: logfile must be specified"; exit 9 ; fi
-if [ ! -f "${LOGDIR}${LOG_FILENAME}" ] ;  then echo "log-atrest: cannot fine logfile '${LOG_FILENAME}'" ; exit 9 ; fi
+if [ ! -f "${LOGDIR}${LOG_FILENAME}" ] ;  then echo "log-atrest: cannot find logfile '${LOG_FILENAME}'" ; exit 9 ; fi
 
 POSITIONS="$(${LOGPOSITIONS} ${LOG_FILENAME})"
-POSITIONCOUNT=$(${GREP} -c '^' <<_< "${POSITIONS}")
+POSITIONCOUNT=$(${GREP} -c '^' <<< "${POSITIONS}")
 
 if [ ${POSITIONCOUNT} -eq 1 ] ; then
   if [ ${OPTION_VERBOSE} ] ; then echo "yes" ; fi
