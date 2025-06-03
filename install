@@ -1,4 +1,31 @@
 #!/bin/bash
+# NAME
+#   install - install log system and/or log system WordPress extensions.
+#
+# SYNOPSIS
+#   install [-s] directory_path
+#
+# DESCRIPTION
+#   Install either a log system or WordPress extensions which support
+#   rendering of log system data.
+#
+#   To install WordPress extensions, directory_path must specify the
+#   root directory of a WordPress installation. Extension scripts will
+#   be installed in the wp-content/mu-plugins/ sub-directory.
+#
+#   To install a log system, directory_path must specify the folder in
+#   which the log system will create and maintain its log files. If
+#   directory_path does not exist it will be created. Log system
+#   scripts will be installed into folders under /usr/local/ and the
+#   file /usr/local/bin/log.defs will be updates with the specified
+#   directory_path.
+#
+#   The -s option will cause files from the repository to be
+#   symbolically linked into the host file system (normally they will
+#   simply be copied).
+#
+#   The install script creates the file /usr/local/bin/log-uninstall
+#   which can be used to delete/unlink and installed files. 
 
 LOG_SOURCE_DIRECTORY=log/
 WORDPRESS_SOURCE_DIRECTORY=wordpress/
@@ -26,10 +53,7 @@ while [ "${1}" != "" ] ; do
   esac
 done
 
-if [ "${TARGET_DIRECTORY}" == "" ] ; then
-  echo "install: log directory or WordPress directory must be specified"
-  exit 1
-fi
+if [ "${TARGET_DIRECTORY}" == "" ] ; then echo "install: log directory or WordPress directory must be specified" ; exit 1 ; fi
 
 # Determine installation type
 if [ -f "${TARGET_DIRECTORY}/wp-config.php" ] ; then
@@ -74,6 +98,12 @@ if [ -d "${SOURCE_DIRECTORY}" ] ; then
   done
 fi
 
+# If log system install, then add log directory entry to defs.
+if [ ! -f "${TARGET_DIRECTORY}/wp-config.php" ] ; then
+  echo "LOGDIR=\"${TARGET_DIRECTORY}\"" >> /usr/local/bin/log.defs
+fi
+
+# Install log-uninstall script
 if [ -d "${UNINSTALL_SCRIPT_DIRECTORY}" ] ; then
   printf "%s\n" "${UNINSTALL_SCRIPT[@]}" > "${UNINSTALL_SCRIPT_DIRECTORY}${UNINSTALL_SCRIPT_NAME}"
   chmod 755 "${UNINSTALL_SCRIPT_DIRECTORY}${UNINSTALL_SCRIPT_NAME}"
