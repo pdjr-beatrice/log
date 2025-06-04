@@ -36,6 +36,7 @@
 LOG_SOURCE_DIRECTORY=log/
 WORDPRESS_SOURCE_DIRECTORY=wordpress/
 
+OPTION_FORCE=
 OPTION_SYMBOLIC=
 TARGET_DIRECTORY=
 UNINSTALL_SCRIPT_DIRECTORY="/usr/local/bin/"
@@ -45,7 +46,7 @@ declare -a UNINSTALL_SCRIPT
 while [ "${1}" != "" ] ; do
   case ${1} in
     -f)
-      FORCE=yes
+      OPTION_FORCE=yes
       ;;
     -h)
       exit 1
@@ -98,10 +99,10 @@ if [ -d "${SOURCE_DIRECTORY}" ] ; then
     for SCRIPT_NAME in * ; do
       SCRIPT_PATHNAME=$( realpath ${SCRIPT_NAME} )
       pushd "${INSTALL_DIR}" > /dev/null
-      if [[ ! ${INSTALL_DIR} =~ ^\/usr\/local\/etc\/ ]] || [ "${OPTION_FORCE}" == "yes" ] ; then
+      if [[ ! ${INSTALL_DIR} =~ ^\/usr\/local\/etc ]] || [ "${OPTION_FORCE}" == "yes" ] ; then
         rm -f ${SCRIPT_NAME}
-        UNINSTALL_SCRIPT+=("rm \"${INSTALL_DIR}${SCRIPT_NAME}\"")
-        echo "install: installing \"${INSTALL_DIR}${SCRIPT_NAME}\""
+        UNINSTALL_SCRIPT+=("rm \"${INSTALL_DIR}/${SCRIPT_NAME}\"")
+        echo "install: installing \"${INSTALL_DIR}/${SCRIPT_NAME}\""
         if [ "${OPTION_SYMBOLIC}" == "yes" ] ; then
           ln -s "${SCRIPT_PATHNAME}" .
         else
