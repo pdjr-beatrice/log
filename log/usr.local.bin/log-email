@@ -30,11 +30,9 @@
 #   The -o switch causes the generated email to be printed to standard
 #   output rather than being sent.
 #
-#   The generated email (discussed below) is sent by default to the
-#   LOG_EMAIL_DEFAULT_RECIPIENT specified in the log.defs file, but
-#   this can be overriden using the -r option.
+#   The -r option introduces an email address that will override the
+#   default email recipient defined in log.defs.
 #
-# EMAIL STRUCTURE
 #   The generated email is a mult-part MIME message consisting of
 #   two or three parts:
 #
@@ -49,6 +47,9 @@
 #   Part 3 (text file attatchment 'logname.log') is only included if
 #   the selected log is a 'day' log and is simply a copy of the log
 #   system data file for the selected day.
+#
+# AUTHOR
+#   Paul Reeve <preeve@pdjr.eu>
 
 source log.defs
 
