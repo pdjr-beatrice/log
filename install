@@ -3,6 +3,7 @@
 #   install - install log system and/or log system WordPress extensions.
 #
 # SYNOPSIS
+#   install [-h]
 #   install [-s] directory_path
 #
 # DESCRIPTION
@@ -20,12 +21,17 @@
 #   file /usr/local/bin/log.defs will be updates with the specified
 #   directory_path.
 #
+#   The -h option displays this manual page.
+#
 #   The -s option will cause files from the repository to be
 #   symbolically linked into the host file system (normally they will
 #   simply be copied).
 #
 #   The install script creates the file /usr/local/bin/log-uninstall
-#   which can be used to delete/unlink and installed files. 
+#   which can be used to delete/unlink and installed files.
+#
+# AUTHOR
+#   Paul Reeve <preeve@pdjr.eu> 
 
 LOG_SOURCE_DIRECTORY=log/
 WORDPRESS_SOURCE_DIRECTORY=wordpress/
@@ -40,6 +46,7 @@ while [ "${1}" != "" ] ; do
   case ${1} in
     -h)
       exit 1
+      ${SED} -e '/^$/,$d' ${0}
       ;;
     -s)
       SYMBOLIC=yes
