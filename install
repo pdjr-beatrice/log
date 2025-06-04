@@ -36,13 +36,11 @@ UNINSTALL_SCRIPT_DIRECTORY="/usr/local/bin/"
 UNINSTALL_SCRIPT_NAME="log-uninstall"
 declare -a UNINSTALL_SCRIPT
 
-if [ "${1}" == "" ] ; then
-  echo "usage: install [-s] ( log_directory | wordpress_directory )"
-  exit 1
-fi
-
 while [ "${1}" != "" ] ; do
   case ${1} in
+    -h)
+      exit 1
+      ;;
     -s)
       SYMBOLIC=yes
       echo "install: installing by symbolic link"
@@ -51,24 +49,30 @@ while [ "${1}" != "" ] ; do
       TARGET_DIRECTORY="${1}"
       ;;
   esac
+  shift
 done
 
 if [ "${TARGET_DIRECTORY}" == "" ] ; then echo "install: log directory or WordPress directory must be specified" ; exit 1 ; fi
 
 # Determine installation type
 if [ -f "${TARGET_DIRECTORY}/wp-config.php" ] ; then
+  echo "install: installing WordPress extensions"
   SOURCE_DIRECTORY=${WORDPRESS_SOURCE_DIRECTORY}
 else
+  echo "install: installing log system"
   SOURCE_DIRECTORY=${LOG_SOURCE_DIRECTORY}
   DATA_DIRECTORY="${TARGET_DIRECTORY}"
   TARGET_DIRECTORY="/"
   if [ ! -f "${DATA_DIRECTORY}" ] ; then
     if [ ! -d "${DATA_DIRECTORY}" ] ; then
+      echo "install: creating log data directory ${DATA_DIRECTORY}"
       mkdir -p "${DATA_DIRECTORY}"
       chmod 777 "${DATA_DIRECTORY}"
+    else
+      echo "install: preserving existing log data directory ${DATA_DIRECTORY}"
     fi
   else
-    echo "install: log directory cannot be created because a file with the specified name already exists"
+    echo "install: log data directory cannot be created (file exists)"
     exit 1
   fi
 fi
@@ -86,6 +90,7 @@ if [ -d "${SOURCE_DIRECTORY}" ] ; then
       pushd "${INSTALL_DIR}" > /dev/null
       rm -f ${SCRIPT_NAME}
       UNINSTALL_SCRIPT+=("rm \"${INSTALL_DIR}${SCRIPT_NAME}\"")
+      echo "install: installing \"${INSTALL_DIR}${SCRIPT_NAME}\""
       if [ "${SYMBOLIC}" == "yes" ] ; then
         ln -s "${SCRIPT_PATHNAME}" .
       else
@@ -100,11 +105,13 @@ fi
 
 # If log system install, then add log directory entry to defs.
 if [ ! -f "${TARGET_DIRECTORY}/wp-config.php" ] ; then
-  echo "LOGDIR=\"${TARGET_DIRECTORY}\"" >> /usr/local/bin/log.defs
+  echo "install: updating /usr/local/bin/log.defs"
+  echo "LOGDIR=${DATA_DIRECTORY}" >> /usr/local/bin/log.defs
 fi
 
 # Install log-uninstall script
 if [ -d "${UNINSTALL_SCRIPT_DIRECTORY}" ] ; then
+  echo "install: installing ${UNINSTALL_SCRIPT_DIRECTORY}${UNINSTALL_SCRIPT_NAME}"
   printf "%s\n" "${UNINSTALL_SCRIPT[@]}" > "${UNINSTALL_SCRIPT_DIRECTORY}${UNINSTALL_SCRIPT_NAME}"
   chmod 755 "${UNINSTALL_SCRIPT_DIRECTORY}${UNINSTALL_SCRIPT_NAME}"
 fi
