@@ -1,8 +1,11 @@
 #!/bin/bash
 # NAME
 #   log-email - email a disgest of one or more log files.
+#
 # SYNOPSIS
+#   log-email [-h]
 #   log-email [-k] [-o] [ -r recipient_email_address ] logname
+#
 # DESCRIPTION
 #   log-email constructs an email containing data drawn from the log
 #   files identified by logname which must have one of the following
@@ -19,6 +22,8 @@
 #   If logname specifies a daily log file (i.e. has the form YYYYMMDD)
 #   the email will also include the raw log file as a second
 #   attatchment called logname.log.
+#
+#   The -h option displays this manual page.
 #
 #   The -k switch suppresses generation of the KML attatchment.
 #
@@ -50,22 +55,23 @@ source log.defs
 OPTION_MAKE_KML=yes
 EMAIL_SEND=
 EMAIL_RECIPIENT=${LOG_EMAIL_DEFAULT_RECIPIENT}
+LOGNAME=$( ${DATE} '+%Y%m%d' )
 
 while [ "${1}" != "" ] ; do
   case ${1} in
     -h)
-      ${GREP} '^#' ${0}
+      ${SED} -e '/^$/,$d' ${0}
       exit 0
       ;;
     -k)
       OPTION_MAKE_KML=no
       ;;
     -o)
-      OPTION_SEND="--output"
+      EMAIL_SEND="--output"
       ;;
     -r)
       shift
-      OPTION_EMAIL_RECIPIENT=${1}
+      EMAIL_RECIPIENT=${1}
       ;;
     *)
       LOGNAME=${1}
