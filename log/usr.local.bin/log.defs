@@ -31,7 +31,6 @@ XARGS=/usr/bin/xargs
 # Log system file locations ##################################################
 #
 BINDIR=/usr/local/bin/
-LOGDIR=/var/log/beatrice/
 LOGIMAGEDIR=${LOGDIR}images/
 LOGATREST=${BINDIR}log-atrest
 LOGEMAIL=${BINDIR}log-email
