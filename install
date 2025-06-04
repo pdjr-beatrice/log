@@ -24,7 +24,7 @@
 #   The -h option displays this manual page.
 #
 #   The -s option will cause files from the repository to be
-#   symbolically linked into the host file system (normally they will
+#   OPTION_ally linked into the host file system (normally they will
 #   simply be copied).
 #
 #   The install script creates the file /usr/local/bin/log-uninstall
@@ -36,7 +36,7 @@
 LOG_SOURCE_DIRECTORY=log/
 WORDPRESS_SOURCE_DIRECTORY=wordpress/
 
-SYMBOLIC=
+OPTION_SYMBOLIC=
 TARGET_DIRECTORY=
 UNINSTALL_SCRIPT_DIRECTORY="/usr/local/bin/"
 UNINSTALL_SCRIPT_NAME="log-uninstall"
@@ -44,13 +44,16 @@ declare -a UNINSTALL_SCRIPT
 
 while [ "${1}" != "" ] ; do
   case ${1} in
+    -f)
+      FORCE=yes
+      ;;
     -h)
       exit 1
       ${SED} -e '/^$/,$d' ${0}
       ;;
     -s)
-      SYMBOLIC=yes
-      echo "install: installing by symbolic link"
+      OPTION_SYMBOLIC=yes
+      echo "install: installing by OPTION_ link"
       ;;
     *)
       TARGET_DIRECTORY="${1}"
@@ -95,15 +98,17 @@ if [ -d "${SOURCE_DIRECTORY}" ] ; then
     for SCRIPT_NAME in * ; do
       SCRIPT_PATHNAME=$( realpath ${SCRIPT_NAME} )
       pushd "${INSTALL_DIR}" > /dev/null
-      rm -f ${SCRIPT_NAME}
-      UNINSTALL_SCRIPT+=("rm \"${INSTALL_DIR}${SCRIPT_NAME}\"")
-      echo "install: installing \"${INSTALL_DIR}${SCRIPT_NAME}\""
-      if [ "${SYMBOLIC}" == "yes" ] ; then
-        ln -s "${SCRIPT_PATHNAME}" .
-      else
-        cp "${SCRIPT_PATHNAME}" .
+      if [[ ! ${INSTALL_DIR} =~ ^\/usr\/local\/etc\/ ]] || [ "${OPTION_FORCE}" == "yes" ] ; then
+        rm -f ${SCRIPT_NAME}
+        UNINSTALL_SCRIPT+=("rm \"${INSTALL_DIR}${SCRIPT_NAME}\"")
+        echo "install: installing \"${INSTALL_DIR}${SCRIPT_NAME}\""
+        if [ "${OPTION_SYMBOLIC}" == "yes" ] ; then
+          ln -s "${SCRIPT_PATHNAME}" .
+        else
+          cp "${SCRIPT_PATHNAME}" .
+        fi
+        chmod 755 "${SCRIPT_NAME}"
       fi
-      chmod 755 "${SCRIPT_NAME}"
       popd > /dev/null
     done
     popd > /dev/null
