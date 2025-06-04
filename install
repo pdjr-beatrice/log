@@ -113,7 +113,7 @@ fi
 # If log system install, then add log directory entry to defs.
 if [ ! -f "${TARGET_DIRECTORY}/wp-config.php" ] ; then
   echo "install: updating /usr/local/bin/log.defs"
-  echo "LOGDIR=${DATA_DIRECTORY}" >> /usr/local/bin/log.defs
+  echo "LOGDIR=${DATA_DIRECTORY}/" >> /usr/local/bin/log.defs
 fi
 
 # Install log-uninstall script
