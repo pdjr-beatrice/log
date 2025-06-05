@@ -83,29 +83,32 @@ minutes2hm() {
 # ${2} - raw value to be stored (from Signal K)
 #
 normalise() {
-    if [ "${1}" ] && [ "${2}" ] ; then
-        case ${1} in
-            ENGINE | GENERATOR | SWITCH | WEATHER)
-                echo "${2}"
-                ;;
-            TANKLEVEL | BATTERYSTATE)
-                echo "$(echo "a=${2};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)"
-                ;;
-            POSITION)
-                local lat=$(echo "${2}" | ${JQ} -j '.latitude')
-                local lon=$(echo "${2}" | ${JQ} -j '.longitude')
-                echo '{ "latitude": '$( echo "a=${lat};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)', "longitude": '$( echo "a=${lon};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)' }'
-                ;;
-             VESSEL)
-                local out=$( echo "${2}" | ${JQ} -j '.[] | select(.name | length > 0) | "{ \"mmsi\": \"" + .mmsi + "\", \"name\": \"" + .name + "\", \"position\": " + (.navigation.position.value|tostring) + " }\n"' )
-                echo "${out}"
-                ;;
-            *)
-                echo ""
-                ;;
-        esac
-    fi
-    echo ""
+  if [ "${1}" ] && [ "${2}" ] ; then
+    case ${1} in
+      PERCENT)
+        echo "$(echo "a=${2};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)"
+        ;;
+      POSITION)
+        local lat=$(echo "${2}" | ${JQ} -j '.latitude')
+        local lon=$(echo "${2}" | ${JQ} -j '.longitude')
+        echo '{ "latitude": '$( echo "a=${lat};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)', "longitude": '$( echo "a=${lon};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)' }'
+        ;;
+      RATIO)
+        echo "$(echo "a=${2};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)"
+        ;;
+      STATE)
+        echo "${2}"
+        ;;
+      VESSEL)
+        local out=$( echo "${2}" | ${JQ} -j '.[] | select(.name | length > 0) | "{ \"mmsi\": \"" + .mmsi + "\", \"name\": \"" + .name + "\", \"position\": " + (.navigation.position.value|tostring) + " }\n"' )
+        echo "${out}"
+        ;;
+      *)
+        echo ""
+        ;;
+    esac
+  fi
+  echo ""
 }
 
 # Compare two log entries for equivalence, returning 0 if equal, otherwise 1.
@@ -116,28 +119,28 @@ normalise() {
 # ${4} - engine state (0 or 1) - comparison may depend upon this...
 #
 compare() {
-    if [ "${1}" ] && [ "${2}" ] && [ "${3}" ] && [ "${4}" ] ; then
-        case ${1} in
-            ENGINE | TANKLEVEL | BATTERYSTATE)
-                if [ "${2}" == "${3}" ] ; then
-                    return 0
-                else
-                    return 1
-                fi
-                ;;
-            POSITION)
-                local places=$(( 3 + ${4} ))
-                local flat=$(printf "%.${places}f " $(echo "${2}" | ${JQ} -j '.latitude'))
-                local flon=$(printf "%.${places}f " $(echo "${2}" | ${JQ} -j '.longitude'))
-                local slat=$(printf "%.${places}f " $(echo "${3}" | ${JQ} -j '.latitude'))
-                local slon=$(printf "%.${places}f " $(echo "${3}" | ${JQ} -j '.longitude'))
-                if [ "${flat}" == "${slat}" ] && [ "${flon}" == "${slon}" ] ; then
-                    return 0
-                else
-                    return 1
-                fi
-                ;;
-        esac
-    fi
-    return 2
+  if [ "${1}" ] && [ "${2}" ] && [ "${3}" ] && [ "${4}" ] ; then
+    case ${1} in
+      PERCENT | RATIO)
+        if [ "${2}" == "${3}" ] ; then
+          return 0
+        else
+          return 1
+        fi
+        ;;
+      POSITION)
+        local places=$(( 3 + ${4} ))
+        local flat=$(printf "%.${places}f " $(echo "${2}" | ${JQ} -j '.latitude'))
+        local flon=$(printf "%.${places}f " $(echo "${2}" | ${JQ} -j '.longitude'))
+        local slat=$(printf "%.${places}f " $(echo "${3}" | ${JQ} -j '.latitude'))
+        local slon=$(printf "%.${places}f " $(echo "${3}" | ${JQ} -j '.longitude'))
+        if [ "${flat}" == "${slat}" ] && [ "${flon}" == "${slon}" ] ; then
+          return 0
+        else
+          return 1
+        fi
+        ;;
+    esac
+  fi
+  return 2
 }

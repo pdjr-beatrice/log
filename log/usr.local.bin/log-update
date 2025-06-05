@@ -10,6 +10,19 @@
 # DESCRIPTION
 #   Update today's log file by processing one or more paragraphs
 #   defined in a log configuration file.
+#
+#   The -c option introduces a configuration file name that overrides
+#   the system default.
+#
+#   The -d option introduces a log data direcory name that overrides
+#   the system default.
+#
+#   The -v option...
+#
+#   The -z option...
+#
+# AUTHOR
+#   Paul Reeve <preeve@pdjr.eu>
 
 source log.defs
 
@@ -32,14 +45,15 @@ while [ "${1}" != "" ] ; do
         LOGDIR="${1}"
         ;;
     -h) # Display usage message
-	      ${GREP} '^#' ${0}
-	      exit 0
+        ${GREP} '^#' ${0}
+        exit 0
         ;;
     -z) # Perform all processing in UTC
         UTC=-u
         ;;
     *)  # Paragraph name
-	      PARAGRAPH_NAMES="${PARAGRAPH_NAMES} ${1^^}"
+        echo "$PARAGRAPH_NAMES  $1"
+        PARAGRAPH_NAMES="${PARAGRAPH_NAMES} ${1:u}"
         ;;
   esac
   shift
@@ -62,31 +76,33 @@ DOIT=0
 #
 if [ ! -f "${LOGFILE_PATH}" ] ; then PARAGRAPH_NAMES="init ${PARAGRAPH_NAMES}" ; fi
 
+echo $PARAGRAPH_NAMES
+
 for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
-  RULES=$(${SED} -n "/\[${PARAGRAPH_NAME}\]/,/^$/p" <<< "${CONFIG}" | ${TAIL} -n '+2')
+  RULES=$(sed -n "/\[${PARAGRAPH_NAME}\]/,/^$/p" <<< "${CONFIG}" | ${TAIL} -n '+2')
 
   LASTTOPLEVELVALUE="ADUMMYVALUE"
-  while read -r TOKEN LABEL SIGNALKPATH; do
+  while read -r TYPE LABEL SIGNALKPATH; do
     SIGNALK_VALUE="${SIGNALK_PATH}"
     if [[ "${SIGNALKPATH}" == "http:"* ]] ; then
-      SIGNALK_VALUE=$( ${WGET} -q -O - ${SIGNALKPATH} | tr -d '\012' )
+      SIGNALK_VALUE=$( wget -q -O - ${SIGNALKPATH} | tr -d '\012' )
       if [[ $( ${JQ} -j 'has("value")' <<<"${SIGNALK_VALUE}" ) == true ]] ; then SIGNALK_VALUE=$( ${JQ} -j '.value' <<<"${SIGNALK_VALUE}" | tr -d '\012' ) ; fi 
     fi
  
-    if [[ ( ${TOKEN} == \!* ) ]] ; then
-      TOKEN=${TOKEN:1}
+    if [[ ( ${TYPE} == \!* ) ]] ; then
+      TYPE=${TYPE:1}
       ITEM_IS_UNIQUE=yes
     fi
 
-    if [[ ( ${TOKEN} == \>* ) ]] ; then
-      TOKEN=${TOKEN:1}
+    if [[ ( ${TYPE} == \>* ) ]] ; then
+      TYPE=${TYPE:1}
       if [ "${DOIT}" == "1" ] ; then
-        SIGNALK_VALUE=$(normalise "${TOKEN}" "${SIGNALK_VALUE}")
+        SIGNALK_VALUE=$(normalise "${TYPE}" "${SIGNALK_VALUE}")
       else
         SIGNALK_VALUE=
       fi
     else
-      SIGNALK_VALUE=$(normalise "${TOKEN}" "${SIGNALK_VALUE}")
+      SIGNALK_VALUE=$(normalise "${TYPE}" "${SIGNALK_VALUE}")
       if [ "${SIGNALK_VALUE}" == "1" ] ; then
         DOIT=1
       else
@@ -116,15 +132,15 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
 
 	      LASTLOGVALUE=
 	      if [ -f ${LOGFILE_PATH} ] ; then
-          LASTLOGVALUE=$(${GREP} "${TOKEN} ${ITEM_LABEL}" "${LOGFILE_PATH}" | ${TAIL} -1 | ${CUT} -d ' ' -f5-)
+          LASTLOGVALUE=$(${GREP} "${TYPE} ${ITEM_LABEL}" "${LOGFILE_PATH}" | ${TAIL} -1 | ${CUT} -d ' ' -f5-)
         fi
  
         # If there isn't a prior value, then just save this new one...
         if [[ "${LASTLOGVALUE}" == "" ]] ; then
-          echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${ITEM_LABEL} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
+          echo "${LOGDATE} [${TIMESTAMP}] ${TYPE} ${ITEM_LABEL} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
         else
           if [[ "${LASTLOGVALUE}" != "${SIGNALK_ITEM}" ]] && [[ "${ITEM_IS_UNIQUE}" != "yes" ]] ; then
-            echo "${LOGDATE} [${TIMESTAMP}] ${TOKEN} ${ITEM_LABEL} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
+            echo "${LOGDATE} [${TIMESTAMP}] ${TYPE} ${ITEM_LABEL} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
           fi
         fi
       done

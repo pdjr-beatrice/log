@@ -50,6 +50,9 @@ For example:
 $> sudo ./install /var/log/shipslog
 ```
 
-In either case, if the directory `/usr/local/bin/` exists, the script
-`/usr/local/bin/log-uninstall` is created and this can subsequently be
-used to uninstall a previously installed collection.
+The value of *directory* is written into `log.defs` so that it becomes
+available to all log system scripts.
+
+Both log system and WordPress extension installs generate the script
+`/usr/local/bin/log-uninstall` which can be used to uninstall a
+previously installed collection.

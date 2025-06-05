@@ -61,10 +61,10 @@ fi
 
 TOTALRUNTIME=0
 for FILENAME in ${FILESPECS} ; do
-    ENTRIES=$(${GREP} -h "${DEVICE^^} State" ${FILENAME})
+    ENTRIES=$(${GREP} -hi "^STATE ${DEVICE}" ${FILENAME})
     START=""
     STOP=""
-    while read time ltime selector event state ; do
+    while read time ltime type selector state ; do
         if [ "${state}" == "1" ] ; then
             START=$(${DATE} --utc -d "${time}" '+%s')
         fi
