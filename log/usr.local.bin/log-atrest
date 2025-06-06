@@ -26,7 +26,7 @@
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
-source log.defs
+. log.defs
 
 LOG_FILENAME=$( ${DATE} '+%Y%m%d' )
 

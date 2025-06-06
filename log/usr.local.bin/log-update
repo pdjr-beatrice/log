@@ -24,7 +24,7 @@
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
-source log.defs
+. "./log.defs"
 
 CONFIGFILE=""
 for name in /etc/log.cfg /usr/local/etc/log.cfg ./log.cfg ; do
@@ -52,7 +52,6 @@ while [ "${1}" != "" ] ; do
         UTC=-u
         ;;
     *)  # Paragraph name
-        echo "$PARAGRAPH_NAMES  $1"
         PARAGRAPH_NAMES="${PARAGRAPH_NAMES} ${1:u}"
         ;;
   esac
@@ -76,22 +75,20 @@ DOIT=0
 #
 if [ ! -f "${LOGFILE_PATH}" ] ; then PARAGRAPH_NAMES="init ${PARAGRAPH_NAMES}" ; fi
 
-echo $PARAGRAPH_NAMES
-
 for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
   RULES=$(sed -n "/\[${PARAGRAPH_NAME}\]/,/^$/p" <<< "${CONFIG}" | ${TAIL} -n '+2')
 
   LASTTOPLEVELVALUE="ADUMMYVALUE"
-  while IFS=',' read -r LABEL, TRANSFORM, VALUE; do
-    LABEL=$( trim ${LABEL} )
-    TRANSFORM=$( trim ${TRANSFORM} )
-    VALUE=$( trime ${VALUE} )
-    SIGNALK_VALUE="${VALUE}"
-    if [[ "${SIGNALK_VALUE}" == "http:"* ]] ; then
-      SIGNALK_VALUE=$( wget -q -O - ${SIGNALK_VALUE} | tr -d '\012' )
-      if [[ $( ${JQ} -j 'has("value")' <<<"${SIGNALK_VALUE}" ) == true ]] ; then SIGNALK_VALUE=$( ${JQ} -j '.value' <<<"${SIGNALK_VALUE}" | tr -d '\012' ) ; fi 
+  while read -ra TOKENS; do
+    VALUE=${TOKENS[-1]} ; unset TOKENS[-1]
+    TRANSFORM=${TOKENS[-1]} ; unset TOKENS[-1]
+    LABEL=$(join ' ' "${TOKENS[@]}")
+
+    if [[ "${VALUE}" == "http:"* ]] ; then
+      VALUE=$( wget -q -O - ${VALUE} | tr -d '\012' )
+      if [[ $( ${JQ} -j 'has("value")' <<<"${VALUE}" ) == true ]] ; then VALUE=$( ${JQ} -j '.value' <<<"${VALUE}" | tr -d '\012' ) ; fi 
     fi
- 
+
     if [[ ( ${LABEL} == \!* ) ]] ; then
       LABEL=${LABEL:1}
       ITEM_IS_UNIQUE=yes
@@ -100,27 +97,27 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
     if [[ ( ${LABEL} == \>* ) ]] ; then
       LABEL=${LABEL:1}
       if [ "${DOIT}" == "1" ] ; then
-        SIGNALK_VALUE=$(normalise "${TRANSFORM}" "${SIGNALK_VALUE}")
+        VALUE=$(normalise "${TRANSFORM}" "${VALUE}")
       else
-        SIGNALK_VALUE=
+        VALUE=
       fi
     else
-      SIGNALK_VALUE=$(normalise "${TRANSFORM}" "${SIGNALK_VALUE}")
-      if [ "${SIGNALK_VALUE}" == "1" ] ; then
+      VALUE=$(normalise "${TRANSFORM}" "${VALUE}")
+      if [ "${VALUE}" == "1" ] ; then
         DOIT=1
       else
         DOIT=0
       fi
     fi
 
-    if [ "${SIGNALK_VALUE}" ] ; then
-      readarray -t SIGNALK_ITEMS <<<${SIGNALK_VALUE}
+    if [ "${VALUE}" ] ; then
+      readarray -t SIGNALK_ITEMS <<<${VALUE}
       for SIGNALK_ITEM in "${SIGNALK_ITEMS[@]}" ; do 
 
         # If LABEL normally supplies the log item ITEM_LABEL, but if
         # it begins with a '$', then it specifies a JSON field name
         # whose value should be used as the ITEM_LABEL.
-        while [[ "${LABEL}" ~= \$\{.*\} ]] ; do
+        while [[ "${LABEL}" =~ \$\{.*\} ]] ; do
           JSON_FIELD=${BASH_REMATCH[1]:2} ; JSON_FIELD=${JSON_FIELD::-1}
           REPLACEMENT=$( ${JQ} -j ".${JSON_FIELD}" <<<${SIGNALK_ITEM} )
           LABEL=${LABEL/${BASH_REMATCH[1]}/${REPLACEMENT}}
@@ -134,17 +131,17 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
           TIMESTAMP=$(${DATE} -Ins) ; TIMESTAMP="${TIMESTAMP%%,*}.000Z"
         fi
 
-	      LASTLOGVALUE=
-	      if [ -f ${LOGFILE_PATH} ] ; then
-          LASTLOGVALUE=$(${GREP} "${TYPE} \"${LABEL}\"" "${LOGFILE_PATH}" | ${TAIL} -1 | ${CUT} -d ' ' -f5-)
+        LASTLOGVALUE=
+        if [ -f ${LOGFILE_PATH} ] ; then
+          LASTLOGVALUE=$(${GREP} "${LABEL} ${TRANSFORM}" "${LOGFILE_PATH}" | ${TAIL} -1 | ${SED} -e "s/${TRANSFORM}/@/;s/.*@ //" )
         fi
  
         # If there isn't a prior value, then just save this new one...
         if [[ "${LASTLOGVALUE}" == "" ]] ; then
-          echo "${LOGDATE} [${TIMESTAMP}] ${TYPE} ${LABEL} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
+          echo "${LOGDATE} [${TIMESTAMP}] ${LABEL} ${TRANSFORM} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
         else
           if [[ "${LASTLOGVALUE}" != "${SIGNALK_ITEM}" ]] && [[ "${ITEM_IS_UNIQUE}" != "yes" ]] ; then
-            echo "${LOGDATE} [${TIMESTAMP}] ${TYPE} ${LABEL} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
+            echo "${LOGDATE} [${TIMESTAMP}] ${LABEL} ${TRANSFORM} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
           fi
         fi
       done

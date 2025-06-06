@@ -86,18 +86,18 @@ normalise() {
   if [ "${1}" ] && [ "${2}" ] ; then
     case ${1} in
       PERCENT)
-        echo "$(echo "a=${2};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)"
+        echo $( printf %.0f $( echo "a=${2}*100.0;scale=4;a/1" | ${BC} -l ) )
         ;;
       POSITION)
         local lat=$(echo "${2}" | ${JQ} -j '.latitude')
         local lon=$(echo "${2}" | ${JQ} -j '.longitude')
-        echo '{ "latitude": '$( echo "a=${lat};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)', "longitude": '$( echo "a=${lon};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)' }'
+        echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f }" ${lat} ${lon} )
         ;;
       RATIO)
-        echo "$(echo "a=${2};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l)"
+        echo $( printf %0.4f $( echo "a=${2};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l ) )
         ;;
-      STATE)
-        echo "${2}"
+      STATE|ENGINE|GENERATOR)
+        echo ${2}
         ;;
       VESSEL)
         local out=$( echo "${2}" | ${JQ} -j '.[] | select(.name | length > 0) | "{ \"mmsi\": \"" + .mmsi + "\", \"name\": \"" + .name + "\", \"position\": " + (.navigation.position.value|tostring) + " }\n"' )
@@ -145,22 +145,25 @@ compare() {
   return 2
 }
 
-trim(){
-    if [ $# -ne 1 ]
-    then
-        echo "USAGE: trimstring [STRING]"
-        return 1
-    fi
-    s="${1}"
+trim() {
+  s="${1}"
+  if [ "${1}" ] ; then
     size_before=${#s}
     size_after=0
-    while [ ${size_before} -ne ${size_after} ]
-    do
-        size_before=${#s}
-        s="${s#[[:space:]]}"
-        s="${s%[[:space:]]}"
-        size_after=${#s}
+    while [ ${size_before} -ne ${size_after} ] ; do
+      size_before=${#s}
+      s="${s#[[:space:]]}"
+      s="${s%[[:space:]]}"
+      size_after=${#s}
     done
-    echo "${s}"
-    return 0
+  fi
+  echo "${s}"
+  return 0
 }
+
+join() {
+  local IFS="${1}"
+  shift
+  echo "$*"
+}
+

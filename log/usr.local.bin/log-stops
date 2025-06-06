@@ -35,7 +35,7 @@
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
-source log.defs
+. log.defs
 
 OPT_ALLSTOPS=
 FILESPECS=
@@ -47,19 +47,19 @@ while [ "${1}" != "" ] ; do
     -a) # Return all stops
       OPT_ALLSTOPS="yes"
       ;;
-		-f) # Return first stop only
-			RESTRICT="first"
-			;;
+    -f) # Return first stop only
+      RESTRICT="first"
+      ;;
     -h)
       ${GREP} '^#' ${0}
       exit 0
       ;;
-		-l) # Return last stop only
-			RESTRICT="last"
-			;;
-		-s) # Simple output format
-			SIMPLE="yes"
-			;;
+    -l) # Return last stop only
+      RESTRICT="last"
+      ;;
+    -s) # Simple output format
+      SIMPLE="yes"
+      ;;
     *)
       FILESPEC=${1}
       while [ ${#FILESPEC} -lt 8 ] ; do FILESPEC=${FILESPEC}'?' ; done
@@ -79,7 +79,7 @@ ALLSTOPS=
 for FILENAME in ${FILESPECS} ; do
   POSITIONS=$(${LOGPOSITIONS} $(${BASENAME} ${FILENAME}))
   POSITIONCOUNT=$(${GREP} -c '^' <<< "${POSITIONS}")
-  STARTPOS=$(${LOGPOSITIONS} $(${BASENAME} ${FILENAME}) | ${HEAD} -1)
+  STARTPOS=$( ${HEAD} -1 <<<${POSITIONS} )
   STOPS=$(${GREP} -h 'POSITION\|ENGINE' ${FILENAME} \
     | ${GREP} -B1 'ENGINE' \
     | ${GREP} '{' \
