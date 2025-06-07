@@ -18,20 +18,22 @@
 #   YYYYMM selects all the log files for the specified month;
 #   YYYYMMDD selects the log file for the specified day.
 #
-#   The optional -d switch allows log entries for the required device to be
-#   specified by their log file token.  In the absence of the -d option, the
-#   script will return total engine hours (equivalent to specifying -d ENGINE).
+#   Records in the specified logfiles which select the device to be
+#   reported are selected by grep using a search key which defaults
+#   to LOG_RUNTIME_DEFAULT_DEVICE (defined in 'log.defs').
+#   The -d option can be used to introduce an arbitrary alternate
+#   search key.
 #
-#   The script operates by processing timestamp values on device State entries
+#   The script operates by processing timestamp values on records 
 #   in each selected log file and so calculates the total device runtime as
 #   hours:minutes for the selected day.
 #
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
-source log.defs
+. ./log.defs
 
-DEVICE=${LOG_HOURS_DEFAULT_DEVICE}
+DEVICE=${LOG_RUNTIME_DEFAULT_DEVICE}
 FILESPECS=
 
 while [ "${1}" != "" ] ; do
@@ -61,7 +63,7 @@ fi
 
 TOTALRUNTIME=0
 for FILENAME in ${FILESPECS} ; do
-    ENTRIES=$(${GREP} -hi "^STATE ${DEVICE}" ${FILENAME})
+    ENTRIES=$(${GREP} -hi "${DEVICE}" ${FILENAME})
     START=""
     STOP=""
     while read time ltime type selector state ; do

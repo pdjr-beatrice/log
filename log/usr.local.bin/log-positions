@@ -5,7 +5,7 @@
 #   log files.
 #
 # SYNOPSIS
-#   log-positions [logfile...]
+#   log-positions -s -f -l [logfile...]
 #   log-positions -h
 #
 # DESCRIPTION
@@ -23,6 +23,22 @@
 #   YYYYMM selects all the log files for the specified month;
 #   YYYYMMDD selects the log file for the specified day.
 #
+#   With no options, the script outputs records for every position
+#   recorded in the specified logfiles.
+#
+#   The -s option restricts output to just positions which represent
+#   a stop: this means any position report that immediately preceeds
+#   an engine stop.
+#   An engine stop is identified as log record containing the text
+#   'Main engine STATE 0', but this text can be overriden using the
+#   -e option.
+#
+#   The -f option restricts output to the first position of those
+#   selected.
+#
+#   The -l option restricts output to the last position of those
+#   selected.
+#
 #   The script outputs records of the form:
 #
 #   { "latitude": lat, "longitude": lng, "date": "YYYY-MM-DDThh:mm:ssZ" }
@@ -33,12 +49,27 @@
 . ./log.defs
 
 FILESPECS=
+POSITION_TYPE=positions
+SELECTOR=all
+ENGINE_STOP="Main engine STATE 0"
 
 while  [ "${1}" != "" ] ; do
   case ${1} in
+    -e)
+      ENGINE_STOP=${1}
+      ;;
+    -f)
+      SELECTOR=first
+      ;;
     -h)
-      ${GREP} '^#' ${0}
+      ${SED} -e '/^$/,$d' ${0}
       exit 0
+      ;;
+    -s)
+      POSITION_TYPE=stops
+      ;;
+    -l)
+      SELECTOR=last
       ;;
     *)
       FILESPEC=${1}
@@ -49,17 +80,31 @@ while  [ "${1}" != "" ] ; do
   shift
 done
 
+if [ ! "${ENGINE_STOP}" ] ; then echo "log-position: -e option must introduce an engine stop token" ; exit 1; fi
+
 if [ ! "${FILESPECS}" ] ; then FILESPECS="${LOGDIR}$(${DATE} +%Y%m%d)" ; fi
 
 for FILENAME in ${FILESPECS} ; do
-  echo "Processing file $FILENAME"
-  while read -r line; do
-    if [[ "${line}" == *"POSITION"* ]] ; then
+  POSITIONS=()
+  case ${POSITION_TYPE} in
+    positions)
+      readarray -t POSITIONS <<<$( ${GREP} -h 'POSITION' ${FILENAME} )
+      ;;
+    stops)
+      readarray -t POSITIONS <<<$( ${GREP} -h 'POSITION\|Main engine STATE' ${FILENAME} | ${GREP} -B1 'STATE 0' | ${GREP} 'POSITION' )
+      ;;
+  esac
+
+  if [ ${#POSITIONS[@]} -gt 0 ] ; then
+    if [ "${SELECTOR}" == "first" ] ; then POSITIONS=( "${POSITIONS[0]}" ) ; fi
+    if [ "${SELECTOR}" == "last" ] ; then POSITIONS=( "${POSITIONS[-1]}" ) ; fi
+
+    for line in "${POSITIONS[@]}" ; do
       date=${line:0:20}
       position_json=$( sed -e 's/.*POSITION //' <<<${line} )
       lat=$(echo "${position_json}" | ${JQ} -j '.latitude')
       lon=$(echo "${position_json}" | ${JQ} -j '.longitude')
       echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": %s }" ${lat} ${lon} ${date} )
-    fi
-  done < "${FILENAME}"
-done
+    done
+  fi
+done    
