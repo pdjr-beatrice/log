@@ -62,26 +62,31 @@ if [ "${FILESPECS}" == "" ] ; then
 fi
 
 TOTALRUNTIME=0
+ENTRIES=()
 for FILENAME in ${FILESPECS} ; do
-    ENTRIES=$(${GREP} -hi "${DEVICE}" ${FILENAME})
-    START=""
-    STOP=""
-    while read time ltime type selector state ; do
-        if [ "${state}" == "1" ] ; then
-            START=$(${DATE} --utc -d "${time}" '+%s')
+  readarray -t ENTRIES <<<$( ${GREP} -hi "${DEVICE}" ${FILENAME} )
+  START=""
+  STOP=""
+  if [ ${#ENTRIES[@]} -gt 0 ] ; then
+    for line in "${ENTRIES[@]}" ; do
+      time=${line:0:20}
+      state=$( ${SED} -e 's/.*STATE //' <<< ${line} )
+      if [ "${state}" == "1" ] ; then
+        START=$(${DATE} --utc -d "${time}" '+%s')
+      fi
+      if [ "${state}" == "0" ] ; then
+        if [ "${START}" != "" ] ; then
+          STOP=$(${DATE} --utc -d "${time}" '+%s') ;
         fi
-        if [ "${state}" == "0" ] ; then
-            if [ "${START}" != "" ] ; then
-                STOP=$(${DATE} --utc -d "${time}" '+%s') ;
-            fi
-        fi
-        if [ "${START}" != "" ] && [ "${STOP}" != "" ] ; then
-            RUNTIME=$(( ${STOP} - ${START} ))
-            TOTALRUNTIME=$(( ${TOTALRUNTIME} + ${RUNTIME} ))
-            START=""
-            STOP=""
-        fi 
-    done <<< "${ENTRIES}" 
+      fi
+      if [ "${START}" != "" ] && [ "${STOP}" != "" ] ; then
+        RUNTIME=$(( ${STOP} - ${START} ))
+        TOTALRUNTIME=$(( ${TOTALRUNTIME} + ${RUNTIME} ))
+        START=""
+        STOP=""
+      fi 
+    done
+  fi 
 done
 
 HOURS=$(( ${TOTALRUNTIME} / 3600 ))
