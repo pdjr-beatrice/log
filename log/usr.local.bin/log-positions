@@ -30,7 +30,7 @@
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
-. log.defs
+. ./log.defs
 
 FILESPECS=
 
@@ -52,6 +52,7 @@ done
 if [ ! "${FILESPECS}" ] ; then FILESPECS="${LOGDIR}$(${DATE} +%Y%m%d)" ; fi
 
 for FILENAME in ${FILESPECS} ; do
+  echo "Processing file $FILENAME"
   while read -r line; do
     if [[ "${line}" == *"POSITION"* ]] ; then
       date=${line:0:20}
