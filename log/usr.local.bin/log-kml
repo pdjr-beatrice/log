@@ -24,7 +24,7 @@
 #   KML content of the output file is:
 #
 #   1. A Folder containing a Placemark for each of the stops returned
-#      by executing log-stops(1) against the collated data
+#      by executing log-positions(1) against the collated data
 #
 #   2. A Placemark entity defining a line string which depicts the
 #      track of the vessel as defined by the points returned by
@@ -32,7 +32,7 @@
 #
 #   The script supports the following command line options:
 #
-#   -a  passed to log-stops(1) to influence the granularity of stop
+#   -a  passed to log-positions(1) to influence the granularity of stop
 #       rendering.
 #
 #   -h  displays this documentation.
@@ -40,7 +40,7 @@
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
-source log.defs
+. ./log.defs
 
 OPT_ALLSTOPS=
 FILESPECS=
@@ -118,7 +118,7 @@ for FILENAME in ${FILESPECS} ; do
   LOGFILE=$(${BASENAME} ${FILENAME})
   echo '  <Folder id="'${LOGFILE}'">'
 
-  STOPS=$(${LOGSTOPS} ${OPT_ALLSTOPS} ${LOGFILE})
+  STOPS=$(${LOGPOSITIONS} -s ${LOGFILE})
   STOPCOUNT=$(${GREP} -c '^' <<< "${STOPS}")
 
   if [ ${STOPCOUNT} -gt 0 ] ; then
