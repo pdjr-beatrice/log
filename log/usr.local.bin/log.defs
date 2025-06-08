@@ -48,6 +48,7 @@ LOGVESSELS=${LOGDIR}vessels.log
 
 # log script defaults ########################################################
 #
+LOG_UPDATE_SERVER_ADDRESS="http://localhost:3000"
 CHECKWX_API_URL="https://api.checkwx.com/"
 CHECKWX_API_KEY="45db989560a14614b18c7beddc"
 LOG_EMAIL_TEMPORARY_STATIC_MAP="/tmp/map.png"

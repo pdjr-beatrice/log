@@ -1,4 +1,38 @@
-# log system
+# log
+
+The `log` project consists of a collection of scripts which create,
+update, process and render data describing the operational state of a
+the host vessel.
+
+The script collection is broken into two parts: a `log` sub-collection
+concerned with generating daily log files and a `wordpress`
+sub-collection concerned with rendering log file content in an
+accessible way.
+
+The `log` sub-collection consumes data from the host vessel's Signal K
+server using HTTP APIs and for reasons of availabilty it is assumed
+that these scripts will execute on the host vessel, perhaps co-located
+with the Signal K server itself.
+
+The `woprdpress` sub-collection consumes daily log files received by
+email from the host vessel and displays this information within the
+context of a WordPress site and it is assumed that these scripts will
+execute on some Internet host.
+
+## Installation
+
+Install the `log` collection on a host computer on the vessel by
+executing the `log-install` script.
+```
+$> git clone https://github.com/pdjr-beatrice/log.git
+$> cd log
+$> log-install -s 192.168.1.1 /var/log/ships-log
+```
+
+
+
+
+
 
 ## log-update
 
@@ -26,6 +60,7 @@ position of the vessel.
 
 The *RUN* and *CLOSE* paragraphs group some rules which can be executed
 by `log-update`.
+
 The *RUN* paragraph logs the current engine state and if this is 1 (on)
 then logs the position of the vessel.
 The pragraph will only be executed when it is explicitly named as an

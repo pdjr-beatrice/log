@@ -1,10 +1,11 @@
 #!/bin/bash
 # NAME
-#   install - install log system and/or log system WordPress extensions.
+#   log-install - install log system and/or log system WordPress
+#   extensions.
 #
 # SYNOPSIS
 #   install [-h]
-#   install [-s] directory_path
+#   install [-s protocol://address:port] directory_path
 #
 # DESCRIPTION
 #   Install either a log system or WordPress extensions which support
@@ -23,9 +24,9 @@
 #
 #   The -h option displays this manual page.
 #
-#   The -s option will cause files from the repository to be
-#   OPTION_ally linked into the host file system (normally they will
-#   simply be copied).
+#   The -s option introduces a default connection string for the data
+#   server overriding the default LOG_UPDATE_SERVER_ADDRESS defined in
+#   `log.defs`.
 #
 #   The install script creates the file /usr/local/bin/log-uninstall
 #   which can be used to delete/unlink and installed files.
@@ -37,7 +38,7 @@ LOG_SOURCE_DIRECTORY=log/
 WORDPRESS_SOURCE_DIRECTORY=wordpress/
 
 OPTION_FORCE=
-OPTION_SYMBOLIC=
+OPTION_LOG_UPDATE_SERVER_ADDRESS=
 TARGET_DIRECTORY=
 UNINSTALL_SCRIPT_DIRECTORY="/usr/local/bin/"
 UNINSTALL_SCRIPT_NAME="log-uninstall"
@@ -53,8 +54,8 @@ while [ "${1}" != "" ] ; do
       ${SED} -e '/^$/,$d' ${0}
       ;;
     -s)
-      OPTION_SYMBOLIC=yes
-      echo "install: installing by OPTION_ link"
+      shift
+      OPTION_LOG_UPDATE_SERVER_ADDRESS=${1}
       ;;
     *)
       TARGET_DIRECTORY="${1}"
@@ -120,6 +121,10 @@ fi
 if [ ! -f "${TARGET_DIRECTORY}/wp-config.php" ] ; then
   echo "install: updating /usr/local/bin/log.defs"
   sed -i "/^LOGDIR=/c\LOGDIR=${DATA_DIRECTORY}\/" /usr/local/bin/log.defs
+fi
+
+if [ "${OPTION_LOG_UPDATE_SERVER_ADDRESS}" ] ; then
+  sed -i "/^LOG_UPDATE_SERVER_ADDRESS/${OPTION_LOG_UPDATE_SERVER_ADDRESS}/" /usr/local/bin/log.defs}
 fi
 
 # Install log-uninstall script
