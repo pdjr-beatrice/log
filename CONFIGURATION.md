@@ -1,19 +1,20 @@
 # log system
 
-The log system creates, maintains and processes a collection of daily
-log files in the directory specified by *LOGDIR*.
-Each day a new file with the name *YYYYMMDD* is created at 00:00Z,
-updated throughout the day, and closed at 23:59:45Z.
-Typically, this work is undertaken by the `/usr/local/bin/log-update`.
+## log-update
+
+The `log-update` program creates and updates a collection of daily log
+files in a configurable *log directory*.
+Each day a new file with the name *YYYYMMDD* is created at 00:00Z, is
+updated throughout the day, and is closed at 23:59:45Z.
 
 Exactly what data `log-update` places in the daily log is specified
 by rules grouped in named paragraphs in the configuration file
 `/usr/local/etc/log.cfg`.
-Each time `log-update` is executed, the name of the rule paragraph
-to be processed must be specified by an argument.
+Each time `log-update` is executed, the name of the rule paragraph or
+paragraphs that should be processed must be specified.
 The simplest way of generating a log is to configure the host system
-`/etc/crontab/` so that `log-update` is executed at appropriate
-time intervals.
+`/etc/crontab/` so that `log-update` is executed at appropriate time
+intervals.
 
 The following example `log.cfg` consists of three paragraphs.
 
@@ -23,9 +24,8 @@ This will result in two entries at the start of every daily log
 recording the state of charge of the domestic battery bank and the
 position of the vessel.
 
-*RUN* and *CLOSE* are user-defined names for paragraphs which will only
-be executed when their names are passed as arguments to `log-update`.
-
+The *RUN* and *CLOSE* paragraphs group some rules which can be executed
+by `log-update`.
 The *RUN* paragraph logs the current engine state and if this is 1 (on)
 then logs the position of the vessel.
 The pragraph will only be executed when it is explicitly named as an
