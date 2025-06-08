@@ -49,6 +49,9 @@ LOGVESSELS=${LOGDIR}vessels.log
 # log script defaults ########################################################
 #
 LOG_UPDATE_SERVER_ADDRESS="http://localhost:3000"
+LOG_UPDATE_VESSEL_PROXIMITY=1
+POSITION_LAT=
+POSITION_LON=
 CHECKWX_API_URL="https://api.checkwx.com/"
 CHECKWX_API_KEY="45db989560a14614b18c7beddc"
 LOG_EMAIL_TEMPORARY_STATIC_MAP="/tmp/map.png"
@@ -90,9 +93,9 @@ normalise() {
         echo $( printf %.0f $( echo "a=${2}*100.0;scale=4;a/1" | ${BC} -l ) )
         ;;
       POSITION)
-        local lat=$(echo "${2}" | ${JQ} -j '.latitude')
-        local lon=$(echo "${2}" | ${JQ} -j '.longitude')
-        echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f }" ${lat} ${lon} )
+        POSITION_LAT=$(echo "${2}" | ${JQ} -j '.latitude')
+        POSITION_LON=$(echo "${2}" | ${JQ} -j '.longitude')
+        echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f }" ${POSITION_LAT} ${POSITION_LON} )
         ;;
       RATIO)
         echo $( printf %0.4f $( echo "a=${2};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l ) )
@@ -101,8 +104,12 @@ normalise() {
         echo ${2}
         ;;
       VESSEL)
-        local out=$( echo "${2}" | ${JQ} -j '.[] | select(.name | length > 0) | "{ \"mmsi\": \"" + .mmsi + "\", \"name\": \"" + .name + "\", \"position\": " + (.navigation.position.value|tostring) + " }\n"' )
-        echo "${out}"
+        if [ "${POSITION_LAT}" ] ; then
+          local lat=$(echo "${2}" | ${JQ} -j '.navigation.position.value.latitude')
+          local lon=$(echo "${2}" | ${JQ} -j '.navigation.position.value.longitude')
+          local out=$( echo "${2}" | ${JQ} -j '.[] | select(.name | length > 0) | "{ \"mmsi\": \"" + .mmsi + "\", \"name\": \"" + .name + "\", \"position\": " + (.navigation.position.value|tostring) + " }\n"' )
+          echo "${out}"
+        fi
         ;;
       *)
         echo ""

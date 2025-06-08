@@ -1,58 +1,55 @@
 # log
 
-This repository contains code implementing an automated ship's log
-and consists of two collections:
+The `log` project consists of a collection of scripts which create,
+update, process and render data describing the operational state of a
+the host vessel.
 
-1. The `log` collection is a group of `bash` scripts which create,
-   maintain and process an archive of ship's daily log files. These
-   scripts should be installed on the host vessel, co-located on the
-   LAN (or even the machine) hosting the ship's Signal K server.
+The script collection is broken into two parts: a `log` sub-collection
+concerned with generating daily log files and a `wordpress`
+sub-collection concerned with rendering log file content in an
+accessible way.
 
-2. The `wordpress` collection is a handful of `php` scripts which can
-   be installed on a WordPress site to provide support for the display
-   of log system data.
-   BEATRICE's
-   [website](https://www.pdjr.eu/)
-   is an example.
+The `log` sub-collection consumes data from the host vessel's Signal K
+server using HTTP APIs and for reasons of availabilty it is assumed
+that these scripts will execute on the host vessel, perhaps co-located
+with the Signal K server itself.
 
-## Basic installation
+The `woprdpress` sub-collection consumes daily log files received by
+email from the host vessel and displays this information within the
+context of a WordPress site and for reasons of accessibility it is
+assumed that these scripts will execute on some Internet host.
 
-Installation of either collection is most easily accomplished by
-logging in to the computer that will host the required collection and
-cloning this repository.
+## Installation
 
-```bash
+Installation of either the `log` or `wordpress` collection is easily
+accomplished from a clone of this repository.
+
+To install the `log` collection on the log system host computer login
+to the host and issue the following commands, replacing
+*server_address* with the protocol, address and port number of your
+local data source HTTP API (e.g. `http://192.168.1.1:3000`) and
+replacing *data_directory* with the path of a folder where log files
+should be stored (e.g. `/var/log/shipslog`). 
+
+```
 $> git clone https://github.com/pdjr-beatrice/log.git
 $> cd log
+$> log-install -s server_address data_directory
 ```
 
-The `install` script takes an absolute directory name as its only
-argument.
+To install the `wordpress` collection on the WordPress host computer
+login to the host and issue the following commands, replacing
+*wordpress_root* with the root directory of your WordPress installation
+(e.g. `/var/www/wordpress`).
 
-```bash
-$> sudo ./install directory
+```
+$> git clone https://github.com/pdjr-beatrice/log.git
+$> cd log
+$> log-install wordpress_root
 ```
 
-If *directory* specifies a WordPress installation root directory then
-the wordpress collection is installed.
-For example:
+Once installation completes, the script `/usr/local/bin/log-uninstall`
+can be used to uninstall a previously installed collection.
 
-```bash
-$> sudo ./install /var/www/wordpress
-```
+## Configuration
 
-Otherwise, *directory* is assumed to specify the folder which should
-be used as the log system's log file archive: this folder will be
-created if it doen't exist and the log collection scripts installed.
-For example:
-
-```bash
-$> sudo ./install /var/log/shipslog
-```
-
-The value of *directory* is written into `log.defs` so that it becomes
-available to all log system scripts.
-
-Both log system and WordPress extension installs generate the script
-`/usr/local/bin/log-uninstall` which can be used to uninstall a
-previously installed collection.
