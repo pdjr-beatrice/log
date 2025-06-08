@@ -48,8 +48,9 @@ LOGVESSELS=${LOGDIR}vessels.log
 
 # log script defaults ########################################################
 #
-LOG_UPDATE_SERVER_ADDRESS="http://localhost:3000"
-LOG_UPDATE_VESSEL_PROXIMITY=1
+LOG_UPDATE_SERVER_ADDRESS="http://192.168.1.1:3000"
+LOG_UPDATE_VESSEL_PROXIMITY=2.0
+LOG_POSITION_QUERY="${LOG_UPDATE_SERVER_ADDRESS}/signalk/v1/api/vessels/self/navigation/position/value"
 LOG_POSITION=
 CHECKWX_API_URL="https://api.checkwx.com/"
 CHECKWX_API_KEY="45db989560a14614b18c7beddc"
@@ -92,7 +93,6 @@ normalise() {
         echo $( printf %.0f $( echo "a=${2}*100.0;scale=4;a/1" | ${BC} -l ) )
         ;;
       POSITION)
-        LOG_POSITION=${2}
         local lat=$(echo "${2}" | ${JQ} -j '.latitude')
         local lon=$(echo "${2}" | ${JQ} -j '.longitude')
         echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f }" ${lat} ${lon} )
@@ -104,14 +104,14 @@ normalise() {
         echo ${2}
         ;;
       VESSEL)
-        if [ "${LOG_POSITION}" ] ; then
-          local position=$(echo "${2}" | ${JQ} -j '.navigation.position.value')
-
-          local separation=$( echo -e "${LOG_POSITIONS}\n${2}" | ${PYTHON} ${LOGTRIPSCRIPT} )
-          echo "Separation ${separation}"
-
-          local out=$( echo "${2}" | ${JQ} -j '.[] | select(.name | length > 0) | "{ \"mmsi\": \"" + .mmsi + "\", \"name\": \"" + .name + "\", \"position\": " + (.navigation.position.value|tostring) + " }\n"' )
-          echo "${out}"
+        local position=$( wget -q -O - "${LOG_POSITION_QUERY}" | tr -d '\012' )
+        if [ "${position}" != "" ] ; then
+          readarray -t vessels <<<$( echo "${2}" | ${JQ} -j '.[] | select(.name | length > 0) | "{ \"mmsi\": \"" + .mmsi + "\", \"name\": \"" + .name + "\", \"position\": " + (.navigation.position.value|tostring) + " }\n"' )
+          for vessel in "${vessels[@]}" ; do
+            local vesselposition=$(echo "${vessel}" | ${JQ} -j '.position|tostring' )
+            local separation=$( echo -e "${position}\n${vesselposition}" | ${PYTHON} ${LOGTRIPSCRIPT} )
+            if [ $( echo "${separation} < ${LOG_UPDATE_VESSEL_PROXIMITY}" | ${BC} -l ) -eq 1 ] ; then echo ${vessel}; fi
+          done
         fi
         ;;
       *)

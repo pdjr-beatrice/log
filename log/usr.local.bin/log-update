@@ -116,16 +116,18 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
     fi
 
     if [ "${VALUE}" ] ; then
+
       readarray -t SIGNALK_ITEMS <<<${VALUE}
       for SIGNALK_ITEM in "${SIGNALK_ITEMS[@]}" ; do 
+        NEWLABEL=${LABEL}
 
         # If LABEL normally supplies the log item ITEM_LABEL, but if
         # it begins with a '$', then it specifies a JSON field name
         # whose value should be used as the ITEM_LABEL.
-        while [[ "${LABEL}" =~ \$\{.*\} ]] ; do
-          JSON_FIELD=${BASH_REMATCH[1]:2} ; JSON_FIELD=${JSON_FIELD::-1}
+        while [[ "${NEWLABEL}" =~ \$\{(.*)\} ]] ; do
+          JSON_FIELD=${BASH_REMATCH[1]}
           REPLACEMENT=$( ${JQ} -j ".${JSON_FIELD}" <<<${SIGNALK_ITEM} )
-          LABEL=${LABEL/${BASH_REMATCH[1]}/${REPLACEMENT}}
+          NEWLABEL=${NEWLABEL/\$\{${JSON_FIELD}\}/${REPLACEMENT}}
         done
 
         TIMESTAMP=
@@ -138,15 +140,15 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
 
         LASTLOGVALUE=
         if [ -f ${LOGFILE_PATH} ] ; then
-          LASTLOGVALUE=$(${GREP} "${LABEL} ${TRANSFORM}" "${LOGFILE_PATH}" | ${TAIL} -1 | ${SED} -e "s/${TRANSFORM}/@/;s/.*@ //" )
+          LASTLOGVALUE=$(${GREP} "${NEWLABEL} ${TRANSFORM}" "${LOGFILE_PATH}" | ${TAIL} -1 | ${SED} -e "s/${TRANSFORM}/@/;s/.*@ //" )
         fi
  
         # If there isn't a prior value, then just save this new one...
         if [[ "${LASTLOGVALUE}" == "" ]] ; then
-          echo "${LOGDATE} [${TIMESTAMP}] ${LABEL} ${TRANSFORM} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
+          echo "${LOGDATE} [${TIMESTAMP}] ${NEWLABEL} ${TRANSFORM} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
         else
           if [[ "${LASTLOGVALUE}" != "${SIGNALK_ITEM}" ]] && [[ "${ITEM_IS_UNIQUE}" != "yes" ]] ; then
-            echo "${LOGDATE} [${TIMESTAMP}] ${LABEL} ${TRANSFORM} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
+            echo "${LOGDATE} [${TIMESTAMP}] ${NEWLABEL} ${TRANSFORM} ${SIGNALK_ITEM}" >> ${LOGFILE_PATH}
           fi
         fi
       done
