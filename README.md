@@ -53,7 +53,7 @@ can be used to uninstall a previously installed collection.
 
 ## Scripts in the `log` collection
 
-:--- |:---
+--- | ---
 `log.cfg`  | Daily log configuration file.
 `log.defs` | System global configuration variables and functions.
 `log-install` | System install script.
