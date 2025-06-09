@@ -49,6 +49,10 @@ LOGVESSELS=${LOGDIR}vessels.log
 #
 # Where to send log files at the end of the day.
 LOG_EMAIL_DEFAULT_RECIPIENT="wordpress@pdjr.eu"
+# The WordPress category for email content
+LOG_EMAIL_WORDPRESS_CATEGORY="log"
+# Reverse GeoLookup place selector
+LOG_EMAIL_REVGEO_PLACE_SELECTORS=('.address.hamlet','.address.village','.address.suburb','.address.municipality','.address.city')
 
 # log-update script defaults ##########################################
 #

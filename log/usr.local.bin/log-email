@@ -51,7 +51,7 @@
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
-source log.defs
+. ./log.defs
 
 OPTION_MAKE_KML=yes
 EMAIL_SEND=
@@ -97,7 +97,7 @@ WP_PUBDATE=$( ${DATE} '+%Y%m%d' )
 WP_TITLE_DATE=""
 
 # The Wordpress category for the supplied email content.
-WP_CATEGORY="log"
+WP_CATEGORY=${LOG_EMAIL_WORDPRESS_CATEGORY}
 
 # Comma separated list of Wordpress tags characterising the email content.
 WP_TAG=""
@@ -139,11 +139,11 @@ START="${LAT}N ${LON}E"
 END=""
 EMAIL_SUBJECT_ENDCLAUSE=""
 REVERSEGEORESULT=$(${WGET} -q -O - "${NOMINATUM_QUERY}lat=${LAT}&lon=${LON}")
-BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.hamlet')
-if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.village') ; fi
-if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.suburb') ; fi
-if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.municipality') ; fi
-if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.city') ; fi
+BLOB="null"
+for selector in ${LOG_EMAIL_REVGEO_PLACE_SELECTORS[@]} ; do
+  BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j "${selector}")
+  if [ "${BLOB}" != "null" ] ; then break ; fi
+done
 if [ "${BLOB}" != "null" ] ; then START=$(${RECODE} ..html <<<"${BLOB}") ; fi
 if [ "${DEBUG}" == "yes" ] ; then echo "log-email: debug: start position identified as ${START}" ; fi
 
@@ -155,11 +155,11 @@ if [ ${STOPCOUNT} -gt 1 ]; then
     LON=$(echo ${STOPPOSITION} | ${JQ} -j '.longitude');
     END="${LAT}N ${LON}E"
     REVERSEGEORESULT=$(${WGET} -q -O - "${NOMINATUM_QUERY}lat=${LAT}&lon=${LON}")
-    BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.hamlet')
-    if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.village') ; fi
-    if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.suburb') ; fi
-    if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.municipality') ; fi
-    if [ "${BLOB}" == "null" ] ; then BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j '.address.city') ; fi
+    BLOB="null"
+    for selector in ${LOG_EMAIL_REVGEO_PLACE_SELECTORS[@]} ; do
+      BLOB=$(echo ${REVERSEGEORESULT} | ${JQ} -j "${selector}")
+      if [ "${BLOB}" != "null" ] ; then break ; fi
+    done
     if [ "${BLOB}" != "null" ] ; then END=$(${RECODE} ..html <<<"${BLOB}") ; fi
     if [ "${DEBUG}" == "yes" ] ; then echo "log-email: debug: end position identified as ${END}" ; fi
 fi
