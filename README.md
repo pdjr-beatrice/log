@@ -51,5 +51,11 @@ $> log-install wordpress_root
 Once installation completes, the script `/usr/local/bin/log-uninstall`
 can be used to uninstall a previously installed collection.
 
-## Configuration
+## Scripts in the `log` collection
 
+|:--- |:--- |
+| `log.cfg`  | Daily log configuration file. |
+| `log.defs` | System global configuration variables and functions. |
+| `log-install` | System install script. |
+| `log-uninstall` | System uninstall script. |
+| `log-update`    | Update today's log file by processing `log.cfg`. |
