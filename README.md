@@ -53,10 +53,10 @@ can be used to uninstall a previously installed collection.
 
 ## Scripts in the `log` collection
 
-| Script          | Description |
-|:---             |:--- |
-| `log.cfg`       | Daily log configuration file. |
-| `log.defs`      | System global configuration variables and functions. |
-| `log-install`   | System install script. |
-| `log-uninstall` | System uninstall script. |
-| `log-update`    | Update today's log file by processing `log.cfg`. |
+| Script                         | Description |
+|:---                            |:--- |
+| `/usr/local/etc/log.cfg`       | Daily log configuration file. |
+| `/usr/local/bin/log.defs`      | System global configuration variables and functions. |
+| `/usr/local/bin/log-install`   | System install script. |
+| `/usr/local/bin/log-uninstall` | System uninstall script. |
+| `/usr/local/bin/log-update`    | Update today's log file by processing `log.cfg`. |
