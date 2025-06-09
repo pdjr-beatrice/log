@@ -4,7 +4,7 @@
 #   log-atrest - check a log file and report if vessel was at rest.
 #
 # SYNOPSIS
-#   log-atrest [-v] [logfile]
+#   log-atrest [logfile]
 #   log-atrest -h
 #
 # DESCRIPTION
@@ -14,14 +14,12 @@
 #
 #   Exits with EXITVALUE = 0 if the log file indicates that the vessel
 #   was at rest (i.e. did not navigate) on the day in question,
-#   otherwise sets EXITVALUE = 1.
+#   otherwise sets EXITVALUE = 1. The script prints "1" on STDOUT if at
+#   rest, otherwise "0" (yes, I know - a trap for the unwary).
 #
 #   The following options are understood:
 #
 #   -h  print this documentation;
-#
-#   -v  As well as setting EXITVALUE, print to standard out the value
-#       "yes" if the vessel was at rest and "no" if it wasn't.
 #
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
@@ -33,11 +31,8 @@ LOG_FILENAME=$( ${DATE} '+%Y%m%d' )
 while  [ "${1}" != "" ] ; do
   case ${1} in
     -h)
-      ${GREP} '^#' ${0}
+      ${SED} -e '/^$/,$d' ${0}
       exit 0
-      ;;
-    -v)
-      OPTION_VERBOSE=1
       ;;
     *)
       LOG_FILENAME=${1}
@@ -46,16 +41,15 @@ while  [ "${1}" != "" ] ; do
   shift
 done
 
-if [ "${LOG_FILENAME}" == "" ] ; then echo "log-atrest: logfile must be specified"; exit 9 ; fi
 if [ ! -f "${LOGDIR}${LOG_FILENAME}" ] ;  then echo "log-atrest: cannot find logfile '${LOG_FILENAME}'" ; exit 9 ; fi
 
-POSITIONS="$(${LOGPOSITIONS} ${LOG_FILENAME})"
+POSITIONS="$(${LOGPOSITIONS} ${LOG_FILENAME})
 POSITIONCOUNT=$(${GREP} -c '^' <<< "${POSITIONS}")
 
 if [ ${POSITIONCOUNT} -eq 1 ] ; then
-  if [ ${OPTION_VERBOSE} ] ; then echo "yes" ; fi
+  echo "1"
   exit 0
 else
-  if [ ${OPTION_VERBOSE} ] ; then echo "no" ; fi
+  echo "0"
   exit 1
 fi

@@ -40,22 +40,29 @@ LOGKML=${BINDIR}log-kml
 LOGPOSITIONS=${BINDIR}log-positions
 LOGREPORT=${BINDIR}log-report
 LOGRUNTIME=${BINDIR}log-runtime
-LOGSTOPS=${BINDIR}log-stops
 LOGTRIP=${BINDIR}log-trip
 LOGTRIPSCRIPT=${BINDIR}/../lib/log-trip.py
 LOGUPDATE=${BINDIR}log-update
 LOGVESSELS=${LOGDIR}vessels.log
 
-# log script defaults ########################################################
+# log-email script defaults ###########################################
 #
+# Where to send log files at the end of the day.
+LOG_EMAIL_DEFAULT_RECIPIENT="wordpress@pdjr.eu"
+
+# log-update script defaults ##########################################
+#
+# The (Signal K) server supplying data to the log system. 
 LOG_UPDATE_SERVER_ADDRESS="http://192.168.1.1:3000"
+# Range threshold above which AIS targets are ignored.
 LOG_UPDATE_VESSEL_PROXIMITY=2.0
+# HTTPS API query returning current position of host vessel.
 LOG_POSITION_QUERY="${LOG_UPDATE_SERVER_ADDRESS}/signalk/v1/api/vessels/self/navigation/position/value"
-LOG_POSITION=
+
+
 CHECKWX_API_URL="https://api.checkwx.com/"
 CHECKWX_API_KEY="45db989560a14614b18c7beddc"
 LOG_EMAIL_TEMPORARY_STATIC_MAP="/tmp/map.png"
-LOG_EMAIL_DEFAULT_RECIPIENT="wordpress@pdjr.eu"
 LOGEMAIL_DEFAULT_REPORT_TEMPLATE=/usr/local/etc/log-report.template
 LOG_RUNTIME_DEFAULT_DEVICE="Main engine STATE"
 LOG_REPORT_DEFAULT_TEMPLATE="log-report.template"
