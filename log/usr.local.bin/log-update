@@ -71,7 +71,7 @@ if [ ! -d "${LOGDIR}" ] ; then echo "log-update: bad or missing log directory '$
 LOGFILE_NAME=$( ${DATE} ${UTC} '+%Y%m%d' )
 LOGFILE_PATH="${LOGDIR/\/$//}/${LOGFILE_NAME}"
 LOGDATE=$( ${DATE} ${UTC} +%FT%TZ )
-CONFIG=$( ${CAT} ${CONFIGFILE} )
+CONFIG=$( ${CAT} ${CONFIGFILE} | ${TR} -s '[:blank:]' )
 DOIT=0
 
 # If the LOGFILE_NAME doesn't exist, then arrange for the init paragraph

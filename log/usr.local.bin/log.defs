@@ -23,6 +23,7 @@ RM=/bin/rm
 SED=/bin/sed
 TAC=/usr/bin/tac
 TAIL=/usr/bin/tail
+TR=/usr/bin/tr
 UNIQ=/usr/bin/uniq
 WC=/usr/bin/wc
 WGET=/usr/bin/wget
