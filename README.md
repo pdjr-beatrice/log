@@ -51,7 +51,32 @@ $> log-install wordpress_root
 Once installation completes, the script `/usr/local/bin/log-uninstall`
 can be used to uninstall a previously installed collection.
 
-## Scripts in the `log` collection
+## Finalising the installation
+
+An install from the repository includes a `log.cfg` file which will
+generate a simple log file which records just the vessel position on
+the assumption that any useful Signal K server will be able to supply
+the position of the 'self' vessel.
+
+To test the system is working, execute the command:
+
+```
+$> log-update run
+```
+
+You should then find a new log file in the *data_directory* specified
+during installation. This daily log file should contain a single
+POSITION record, for example:
+
+```
+2025-06-08T20:21:39Z [2025-06-08T20:21:40.000Z] Position POSITION { "latitude": 51.688263, "longitude": 5.318658 }
+```
+
+If this test succeeds, then the execution of `log-update` needs to be
+automated by adding an appropriate line to the host sytem's
+`/etc/crontab`.
+
+
 
 | Script                         | Description |
 |:---                            |:--- |

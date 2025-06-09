@@ -64,18 +64,11 @@ LOG_UPDATE_VESSEL_PROXIMITY=2.0
 # HTTPS API query returning current position of host vessel.
 LOG_POSITION_QUERY="${LOG_UPDATE_SERVER_ADDRESS}/signalk/v1/api/vessels/self/navigation/position/value"
 
-
-CHECKWX_API_URL="https://api.checkwx.com/"
-CHECKWX_API_KEY="45db989560a14614b18c7beddc"
 LOG_EMAIL_TEMPORARY_STATIC_MAP="/tmp/map.png"
 LOGEMAIL_DEFAULT_REPORT_TEMPLATE=/usr/local/etc/log-report.template
 LOG_RUNTIME_DEFAULT_DEVICE="Main engine STATE"
 LOG_REPORT_DEFAULT_TEMPLATE="log-report.template"
 
-MAPBOX_ACCESS_TOKEN="pk.eyJ1IjoicHJlZXZlOTUzNCIsImEiOiJjamdzMndiYWUwaHBtMnhzM3ByNzQ2Nnd3In0.afYS2Tk3E5PKxWfvnqxhuw"
-MAPBOX_MAPSIZE="800x400"
-MAPBOX_POSITION="auto"
-MAPBOX_QUERY="https://api.mapbox.com/styles/v1/mapbox/streets-v11/static"
 NOMINATUM_QUERY="https://nominatim.openstreetmap.org/reverse?format=json&"
 
 
