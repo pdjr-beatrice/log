@@ -60,7 +60,7 @@ LOG_EMAIL_REVGEO_PLACE_SELECTORS=('.address.hamlet','.address.village','.address
 # The (Signal K) server supplying data to the log system. 
 LOG_UPDATE_SERVER_ADDRESS="http://192.168.1.1:3000"
 # Range threshold above which AIS targets are ignored.
-LOG_UPDATE_VESSEL_PROXIMITY=2.0
+LOG_UPDATE_VESSEL_PROXIMITY=1.0
 # HTTPS API query returning current position of host vessel.
 LOG_POSITION_QUERY="${LOG_UPDATE_SERVER_ADDRESS}/signalk/v1/api/vessels/self/navigation/position/value"
 
