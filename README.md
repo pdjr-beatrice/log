@@ -92,7 +92,8 @@ $> log-update run
 
 You should now find a new daily log file in the *data_directory*
 specified during installation. This file should contain a single
-POSITION record which looks something like this:
+POSITION record (output by processing the `[INIT]` paragraph) which
+looks something like this:
 
 ```none
 2025-06-08T20:21:39Z [2025-06-08T20:21:40.000Z] Position POSITION { "latitude": 51.688263, "longitude": 5.318658 }
