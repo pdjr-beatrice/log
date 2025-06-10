@@ -1,8 +1,8 @@
 # log
 
 The `log` project consists of a collection of scripts which create,
-update, process and render data describing the operational state of a
-the host vessel.
+update, process and render data describing the operational state of the
+host vessel.
 
 The script collection is broken into two parts: a `log` sub-collection
 concerned with generating daily log files and a `wordpress`
