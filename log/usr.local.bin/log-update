@@ -24,7 +24,7 @@
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
-. "./log.defs"
+. /usr/local/bin/log.defs
 
 CONFIGFILE=""
 for name in /etc/log.cfg /usr/local/etc/log.cfg ./log.cfg ; do

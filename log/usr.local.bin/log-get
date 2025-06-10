@@ -36,7 +36,7 @@
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
-source log.defs
+. /usr/local/bin/log.defs
 
 FILESPECS=
 FILESPEC=

@@ -24,7 +24,7 @@
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
-. ./log.defs
+. /usr/local/bin/log.defs
 
 LOG_FILENAME=$( ${DATE} '+%Y%m%d' )
 

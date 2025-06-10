@@ -51,7 +51,7 @@
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
-. ./log.defs
+. /usr/local/bin/log.defs
 
 OPTION_MAKE_KML=yes
 EMAIL_SEND=

@@ -31,7 +31,7 @@
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
-. ./log.defs
+. /usr/local/bin/log.defs
 
 DEVICE=${LOG_RUNTIME_DEFAULT_DEVICE}
 FILESPECS=
