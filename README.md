@@ -62,7 +62,6 @@ Position, POSITION, /signalk/v1/api/vessels/self/navigation/position
 
 [RUN]
 Main engine, STATE, 1
-Main engine, STATE, /signalk/v1/api/vessels/self/electrical/switches/bank/16/16/state
 >Position, POSITION, /signalk/v1/api/vessels/self/navigation/position
 ```
 
