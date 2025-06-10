@@ -72,6 +72,21 @@ You can test the operation of the system by:
 $> log-install run
 ```
 
+You should now find a new daily log file in the *data_directory*
+specified during installation. This file should contain two POSITION
+records (one output by processing the `[INIT]` paragraph and
+another output by processing the `[RUN]` paragraph). Something like
+this:
+
+```none
+2025-06-08T20:21:39Z [2025-06-08T20:21:40.000Z] Position POSITION { "latitude": 51.688263, "longitude": 5.318658 }
+2025-06-08T20:21:44Z [2025-06-08T20:21:42.000Z] Position POSITION { "latitude": 51.688263, "longitude": 5.318658 }
+```
+
+
+
+
+
   the `[INIT]` paragraph
 write a position entry to the daily log file when it is first created;
 the `[RUN]` paragraph aims to log a position only if the host vessel is
