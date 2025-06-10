@@ -55,11 +55,7 @@ while [ "${1}" != "" ] ; do
     shift
 done
 
-if [ "${FILESPECS}" == "" ] ; then
-    echo "usage: log-runtime [-d DEVICE] logfilespec..."
-    echo "usage: log-runtime -h"
-    exit 0
-fi
+if [ "${FILESPECS}" == "" ] ; then FILESPECS="${LOGDIR}$( ${DATE} '+%Y%m%d' )" ; fi
 
 TOTALRUNTIME=0
 ENTRIES=()

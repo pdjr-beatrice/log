@@ -40,7 +40,7 @@
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
-. /usr/local/bin//log.defs
+. /usr/local/bin/log.defs
 
 OPT_ALLSTOPS=
 FILESPECS=
