@@ -75,30 +75,21 @@ $> log-install run
 You should now find a new daily log file in the *data_directory*
 specified during installation. This file should contain two POSITION
 records (one output by processing the `[INIT]` paragraph and
-another output by processing the `[RUN]` paragraph). Something like
-this:
+another output by processing the `[RUN]` paragraph). If you `cat`
+the file it should look something likethis:
 
 ```none
 2025-06-08T20:21:39Z [2025-06-08T20:21:40.000Z] Position POSITION { "latitude": 51.688263, "longitude": 5.318658 }
 2025-06-08T20:21:44Z [2025-06-08T20:21:42.000Z] Position POSITION { "latitude": 51.688263, "longitude": 5.318658 }
 ```
 
+Each time `log-install run` is executed another (redundant) POSITION
+record will be added to the log file.  We need to ensure that new
+positions are only recorded when the host vessel is moving and
+detecting this depends upon data available within the vessel's
+particular Signal K system.
 
-
-
-
-  the `[INIT]` paragraph
-write a position entry to the daily log file when it is first created;
-the `[RUN]` paragraph aims to log a position only if the host vessel is
-navigating and assumes that the main engine state is a good indicator
-of this (there are other indicators that might be used). Since I don't
-know what data is available from Signal K on your vessel, the sample
-configuration file fakes the main engine as permanently on and you will
-want to change this to avoid filling your log files with redundant
-POSITION records. Here are two suggestions.
-
-Suggestion 1: sense the main engine ignition state. This is how I do it
-on my ship:
+On my ship Signal K senses the main engine ignition state.
 
 ```none
 [RUN]
@@ -106,7 +97,7 @@ Main engine, STATE, /signalk/v1/api/vessels/self/electrical/switches/bank/16/16/
 >Position, POSITION, /signalk/v1/api/vessels/self/navigation/position
 ```
 
-Suggestion 2: sense vessel movement using speed over ground. The following
+An alternative is to sense the vessel's sped over ground. The following
 example will log position data when the vessel speed is greater than
 3.6kph.
 
@@ -118,27 +109,9 @@ Speed over ground, NONZERO, /signalk/v1/api/vessels/self/navigation/speedOverGro
 
 You will no doubt be able to dream up other possibilities
 
-## Basic testing
-
-To test the system is working, execute the command:
-
-```bash
-$> log-update run
-```
-
-You should now find a new daily log file in the *data_directory*
-specified during installation. This file should contain a single
-POSITION record (output by processing the `[INIT]` paragraph) which
-looks something like this:
-
-```none
-2025-06-08T20:21:39Z [2025-06-08T20:21:40.000Z] Position POSITION { "latitude": 51.688263, "longitude": 5.318658 }
-```
-
-Repeated execution of `log-update run` will only add further entries to
-the log if the STATE (or NONZERO) test in the `[RUN]` paragraph succeeds.
-In this way, repeated updates will only extend the log (and so record a
-track) if the vessel is being navigated.
+Once the configuration file has been chaged to include appropriate
+movement sensing, further execution of `log-update run` should not
+change the log file - unless, of course, the host vessel is moving.
 
 ## Finalising installation
 
