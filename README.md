@@ -61,26 +61,41 @@ An install from the repository includes this simple configuration file
 Position, POSITION, /signalk/v1/api/vessels/self/navigation/position
 
 [RUN]
+Main engine, STATE, 1
 Main engine, STATE, /signalk/v1/api/vessels/self/electrical/switches/bank/16/16/state
 >Position, POSITION, /signalk/v1/api/vessels/self/navigation/position
 ```
 
 which serves only to log the vessel position:  the `[INIT]` paragraph
 write a position entry to the daily log file when it is first created;
-the `[RUN]` paragraph only if the main engine state is 1.
+the `[RUN]` paragraph aims to log a position only if the host vessel is
+navigating and assumes that the main engine state is a good indicator
+of this (there are other indicators that might be used). Since I don't
+know what data is available from Signal K on your vessel, the sample
+configuration file fakes the main engine as permanently on and you will
+want to change this to avoid filling your log files with redundant
+POSITION records. Here are two suggestions.
 
-On my ship, Signal K detects the state of the engine ignition switch
-on the specified path which will need to be changed to reflect your
-system configuration. If engine state is not available to Signal K,
-then you may be able to use the following alternative `[RUN]`
-paragraph, but note that NONZERO only returns true for values greater
-than 1 which equates to a speed greater than 3.6kmph.
+Suggestion 1: sense the main engine ignition state. This is how I do it
+on my ship:
+
+```none
+[RUN]
+Main engine, STATE, /signalk/v1/api/vessels/self/electrical/switches/bank/16/16/state
+>Position, POSITION, /signalk/v1/api/vessels/self/navigation/position
+```
+
+Suggestion 2: sense vessel movement using speed over ground. The following
+example will log position data when the vessel speed is greater than
+3.6kph.
 
 ```none
 [RUN]
 Speed over ground, NONZERO, /signalk/v1/api/vessels/self/navigation/speedOverGround
 >Position, POSITION, /signalk/v1/api/vessels/self/navigation/position
 ```
+
+You will no doubt be able to dream up other possibilities
 
 ## Basic testing
 
