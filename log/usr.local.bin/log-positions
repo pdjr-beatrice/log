@@ -104,7 +104,7 @@ for FILENAME in ${FILESPECS} ; do
       position_json=$( sed -e 's/.*POSITION //' <<<${line} )
       lat=$(echo "${position_json}" | ${JQ} -j '.latitude')
       lon=$(echo "${position_json}" | ${JQ} -j '.longitude')
-      echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": %s }" ${lat} ${lon} ${date} )
+      echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
     done
   fi
 done    

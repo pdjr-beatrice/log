@@ -52,9 +52,6 @@ while [ "${1}" != "" ] ; do
         shift
         LOG_UPDATE_SERVER_ADDRESS=${1}
         ;;
-    -z) # Perform all processing in UTC
-        UTC=-u
-        ;;
     *)  # Paragraph name
         PARAGRAPH_NAMES="${PARAGRAPH_NAMES} ${1:u}"
         ;;
@@ -68,9 +65,9 @@ if [ "${LOG_UPDATE_SERVER_ADDRESS}" == "" ] ; then echo "log-update: the -s opti
 if [ ! -f "${CONFIGFILE}" ] ; then echo "log-update: bad or missing configuration file '${CONFIGFILE}'" ; exit 3 ; fi
 if [ ! -d "${LOGDIR}" ] ; then echo "log-update: bad or missing log directory '${LOGDIR}'" ; exit 1 ; fi
 
-LOGFILE_NAME=$( ${DATE} ${UTC} '+%Y%m%d' )
+LOGFILE_NAME=$( ${DATE} '+%Y%m%d' )
 LOGFILE_PATH="${LOGDIR/\/$//}/${LOGFILE_NAME}"
-LOGDATE=$( ${DATE} ${UTC} +%FT%TZ )
+LOGDATE=$( ${DATE} '+%Y-%m-%d %H:%M:%S %Z' )
 CONFIG=$( ${CAT} ${CONFIGFILE} | ${TR} -s '[:blank:]' )
 DOIT=0
 
@@ -84,15 +81,20 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
 
   LASTTOPLEVELVALUE="ADUMMYVALUE"
   while read -ra TOKENS; do
-    VALUE=${TOKENS[-1]} ; unset TOKENS[-1]
+    PATHORDEFAULT=${TOKENS[-1]} ; unset TOKENS[-1]
     TRANSFORM=${TOKENS[-1]} ; unset TOKENS[-1]
     LABEL=$(join ' ' "${TOKENS[@]}")
+    TIMESTAMP=
 
-    if [[ "${VALUE}" == "/"* ]] ; then
-      VALUE=${LOG_UPDATE_SERVER_ADDRESS}${VALUE}
-      VALUE=$( wget -q -O - ${VALUE} | tr -d '\012' )
-      if [[ $( ${JQ} -j 'has("value")' <<<"${VALUE}" ) == true ]] ; then VALUE=$( ${JQ} -j '.value' <<<"${VALUE}" | tr -d '\012' ) ; fi 
+    if [[ "${PATHORDEFAULT}" == "/"* ]] ; then
+      QUERYRESULT=$( wget -q -O - "${LOG_UPDATE_SERVER_ADDRESS}${PATHORDEFAULT}" | tr -d '\012' )
+      VALUE="${QUERYRESULT}"
+      if [[ $( ${JQ} -j 'has("value")' <<<"${QUERYRESULT}" ) == true ]] ; then VALUE=$( ${JQ} -j '.value' <<<"${QUERYRESULT}" | tr -d '\012' ) ; fi 
+      if [[ $( ${JQ} -j 'has("timestamp")' <<<"${QUERYRESULT}" ) == true ]] ; then TIMESTAMP=$( ${JQ} -j '.timestamp' <<<"${QUERYRESULT}" | tr -d '\012' ) ; fi 
+    else
+      VALUE=$PATHORDEFAULT
     fi
+
 
     ITEM_IS_UNIQUE=
     if [ "${LABEL:0:1}" == "!" ] ; then
@@ -130,14 +132,6 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
           REPLACEMENT=$( ${JQ} -j ".${JSON_FIELD}" <<<${SIGNALK_ITEM} )
           NEWLABEL=${NEWLABEL/\$\{${JSON_FIELD}\}/${REPLACEMENT}}
         done
-
-        TIMESTAMP=
-        if [[ "${SIGNALKPATH}" == "http:"* ]] ; then
-          TIMESTAMP=$(${WGET} -q -O - ${SIGNALKPATH} | ${JQ} -j '.timestamp' | tr -d '\012')
-        fi
-        if [ ! ${TIMESTAMP} ] ; then 
-          TIMESTAMP=$(${DATE} -Ins) ; TIMESTAMP="${TIMESTAMP%%,*}.000Z"
-        fi
 
         LASTLOGVALUE=
         if [ -f ${LOGFILE_PATH} ] ; then

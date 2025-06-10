@@ -115,11 +115,11 @@ arr=(${FILESPECS})
 FILECOUNT=${#arr[@]}
 FCOUNT=1
 for FILENAME in ${FILESPECS} ; do
-  LOGFILE=$(${BASENAME} ${FILENAME})
+  LOGFILE=$( ${BASENAME} ${FILENAME} )
   echo '  <Folder id="'${LOGFILE}'">'
 
-  STOPS=$(${LOGPOSITIONS} -s ${LOGFILE})
-  STOPCOUNT=$(${GREP} -c '^' <<< "${STOPS}")
+  STOPS=$( ${LOGPOSITIONS} -s ${LOGFILE} )
+  STOPCOUNT=$( ${GREP} -c '^' <<< "${STOPS}" )
 
   if [ ${STOPCOUNT} -gt 0 ] ; then
     COUNT=1
