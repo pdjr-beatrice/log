@@ -29,9 +29,9 @@ to the host and issue the following commands, replacing
 *server_address* with the protocol, address and port number of your
 local data source HTTP API (e.g. `http://192.168.1.1:3000`) and
 replacing *data_directory* with the path of a folder where log files
-should be stored (e.g. `/var/log/shipslog`). 
+should be stored (e.g. `/var/log/shipslog`).
 
-```
+```bash
 $> git clone https://github.com/pdjr-beatrice/log.git
 $> cd log
 $> log-install -s server_address data_directory
@@ -42,7 +42,7 @@ login to the host and issue the following commands, replacing
 *wordpress_root* with the root directory of your WordPress installation
 (e.g. `/var/www/wordpress`).
 
-```
+```bash
 $> git clone https://github.com/pdjr-beatrice/log.git
 $> cd log
 $> log-install wordpress_root
@@ -53,35 +53,73 @@ can be used to uninstall a previously installed collection.
 
 ## Finalising the installation
 
-An install from the repository includes a `log.cfg` file which will
-generate a simple log file which records just the vessel position on
-the assumption that any useful Signal K server will be able to supply
-the position of the 'self' vessel.
+An install from the repository includes this simple configuration file
+`/usr/local/etc/log.cfg`:
+
+```none
+[INIT]
+Position, POSITION, /signalk/v1/api/vessels/self/navigation/position
+
+[RUN]
+Main engine, STATE, /signalk/v1/api/vessels/self/electrical/switches/bank/16/16/state
+>Position, POSITION, /signalk/v1/api/vessels/self/navigation/position
+```
+
+which serves only to log the vessel position:  the `[INIT]` paragraph
+write a position entry to the daily log file when it is first created;
+the `[RUN]` paragraph only if the main engine state is 1.
+
+On my ship, Signal K detects the state of the engine ignition switch
+on the specified path which will need to be changed to reflect your
+system configuration. If engine state is not available to Signal K,
+then you may be able to use the following alternative `[RUN]`
+paragraph, but note that NONZERO only returns true for values greater
+than 1 which equates to a speed greater than 3.6kmph.
+
+```none
+[RUN]
+Speed over ground, NONZERO, /signalk/v1/api/vessels/self/navigation/speedOverGround
+>Position, POSITION, /signalk/v1/api/vessels/self/navigation/position
+```
+
+## Basic testing
 
 To test the system is working, execute the command:
 
-```
+```bash
 $> log-update run
 ```
 
-You should then find a new log file in the *data_directory* specified
-during installation. This daily log file should contain a single
-POSITION record, for example:
+You should now find a new daily log file in the *data_directory*
+specified during installation. This file should contain a single
+POSITION record which looks something like this:
 
-```
+```none
 2025-06-08T20:21:39Z [2025-06-08T20:21:40.000Z] Position POSITION { "latitude": 51.688263, "longitude": 5.318658 }
 ```
 
-If this test succeeds, then the execution of `log-update` needs to be
-automated by adding an appropriate line to the host sytem's
+Repeated execution of `log-update run` will only add further entries to
+the log if the STATE (or NONZERO) test in the `[RUN]` paragraph succeeds.
+In this way, repeated updates will only extend the log (and so record a
+track) if the vessel is being navigated.
+
+## Finalising installation
+
+If the basic testing described above succeeds, then the execution of
+`log-update run` needs to be automated by adding an appropriate line to
+the host sytem's `/etc/crontab`.
+The frequency of repetition of the command depends mostly on the
+granularity you require on any recorded track; in my case, I choose to
+run the command once a minute by adding the following line to
 `/etc/crontab`.
 
+```crontab
+*/1 *   * * *   root    /usr/local/bin/log-update run >/dev/null 2>/dev/null
+```
 
+## Where next?
 
-| Script                         | Description |
-|:---                            |:--- |
-| `/usr/local/etc/log.cfg`       | Daily log configuration file. |
-| `/usr/local/bin/log.defs`      | System global configuration variables and functions. |
-| `/usr/local/bin/log-install`   | System install script. |
-| `/usr/local/bin/log-uninstall` | System uninstall script. |
-| `/usr/local/bin/log-update`    | Update today's log file by processing `log.cfg`. |
+Check out
+[CONFIGURATION.md](CONFIGURATION.md)
+for information on how to extend what is logged and suggestions on how
+to review and publish logged data.
