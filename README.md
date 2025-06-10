@@ -53,8 +53,9 @@ can be used to uninstall a previously installed collection.
 
 ## Finalising the installation
 
-An install from the repository includes this simple configuration file
-`/usr/local/etc/log.cfg`:
+An install from the repository includes the following specimen
+configuration file ,`/usr/local/etc/log.cfg`, which serves only to
+log the vessel position.
 
 ```none
 [INIT]
@@ -65,7 +66,13 @@ Main engine, STATE, 1
 >Position, POSITION, /signalk/v1/api/vessels/self/navigation/position
 ```
 
-which serves only to log the vessel position:  the `[INIT]` paragraph
+You can test the operation of the system by:
+
+```bash
+$> log-install run
+```
+
+  the `[INIT]` paragraph
 write a position entry to the daily log file when it is first created;
 the `[RUN]` paragraph aims to log a position only if the host vessel is
 navigating and assumes that the main engine state is a good indicator
