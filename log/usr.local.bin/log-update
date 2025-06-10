@@ -94,12 +94,13 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
       if [[ $( ${JQ} -j 'has("value")' <<<"${VALUE}" ) == true ]] ; then VALUE=$( ${JQ} -j '.value' <<<"${VALUE}" | tr -d '\012' ) ; fi 
     fi
 
-    if [[ ( ${LABEL} == \!* ) ]] ; then
+    ITEM_IS_UNIQUE=
+    if [ "${LABEL:0:1}" == "!" ] ; then
       LABEL=${LABEL:1}
       ITEM_IS_UNIQUE=yes
     fi
 
-    if [[ ( ${LABEL} == \>* ) ]] ; then
+    if [ "${LABEL:0:1}" == ">" ] ; then
       LABEL=${LABEL:1}
       if [ "${DOIT}" == "1" ] ; then
         VALUE=$(normalise "${TRANSFORM}" "${VALUE}")
@@ -142,6 +143,8 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
         if [ -f ${LOGFILE_PATH} ] ; then
           LASTLOGVALUE=$(${GREP} "${NEWLABEL} ${TRANSFORM}" "${LOGFILE_PATH}" | ${TAIL} -1 | ${SED} -e "s/${TRANSFORM}/@/;s/.*@ //" )
         fi
+
+        # echo "$NEWLABEL $LASTLOGVALUE $SIGNALK_ITEM $ITEM_IS_UNIQUE"
  
         # If there isn't a prior value, then just save this new one...
         if [[ "${LASTLOGVALUE}" == "" ]] ; then
