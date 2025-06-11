@@ -86,7 +86,7 @@ the file it should look something likethis:
 Each time `log-install run` is executed another (redundant) POSITION
 record will be added to the log file.  We need to ensure that new
 positions are only recorded when the host vessel is moving and
-detecting this depends upon data available within the vessel's
+detecting this depends upon data available within the host vessel's
 particular Signal K system.
 
 On my ship Signal K senses the main engine ignition state.
@@ -109,7 +109,7 @@ Speed over ground, NONZERO, /signalk/v1/api/vessels/self/navigation/speedOverGro
 
 You will no doubt be able to dream up other possibilities
 
-Once the configuration file has been chaged to include appropriate
+Once the configuration file has been changed to include appropriate
 movement sensing, further execution of `log-update run` should not
 change the log file - unless, of course, the host vessel is moving.
 
