@@ -33,6 +33,7 @@ done
 LOGDIR=${LOGDIR}
 PARAGRAPH_NAMES=
 UTC=
+FORCE=
 
 while [ "${1}" != "" ] ; do
   case ${1} in
@@ -43,6 +44,9 @@ while [ "${1}" != "" ] ; do
     -d) # Command line explicitly specifies a log directory
         shift
         LOGDIR="${1}"
+        ;;
+    -f) # Force rule
+        FORCE=yes
         ;;
     -h) # Display usage message
         ${SED} -e '/^$/,$d' ${0}
@@ -134,8 +138,10 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
         done
 
         LASTLOGVALUE=
-        if [ -f ${LOGFILE_PATH} ] ; then
-          LASTLOGVALUE=$(${GREP} "${NEWLABEL} ${TRANSFORM}" "${LOGFILE_PATH}" | ${TAIL} -1 | ${SED} -e "s/${TRANSFORM}/@/;s/.*@ //" )
+        if [ "${FORCE}" != "yes" ] ; then
+          if [ -f ${LOGFILE_PATH} ] ; then
+            LASTLOGVALUE=$(${GREP} "${NEWLABEL} ${TRANSFORM}" "${LOGFILE_PATH}" | ${TAIL} -1 | ${SED} -e "s/${TRANSFORM}/@/;s/.*@ //" )
+          fi
         fi
 
         # echo "$NEWLABEL $LASTLOGVALUE $SIGNALK_ITEM $ITEM_IS_UNIQUE"
