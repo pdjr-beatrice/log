@@ -124,7 +124,7 @@ case ${#LOGNAME} in
         exit 2
 esac
 
-STOPS=$( ${LOGSTOPS} "${LOGNAME}" )
+STOPS=$( ${LOGPOSITIONS} -s "${LOGNAME}" )
 STOPCOUNT=$(${GREP} -c '^' <<<"${STOPS}")
 
 if [ ${STOPCOUNT} -eq 0 ] ; then

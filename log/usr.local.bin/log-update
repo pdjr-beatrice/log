@@ -67,7 +67,7 @@ if [ ! -d "${LOGDIR}" ] ; then echo "log-update: bad or missing log directory '$
 
 LOGFILE_NAME=$( ${DATE} '+%Y%m%d' )
 LOGFILE_PATH="${LOGDIR/\/$//}/${LOGFILE_NAME}"
-LOGDATE=$( ${DATE} '+%Y-%m-%d %H:%M:%S %Z' )
+LOGDATE=$( ${DATE} '+%Y-%m-%dT%H:%M:%S_%Z' )
 CONFIG=$( ${CAT} ${CONFIGFILE} | ${TR} -s '[:blank:]' )
 DOIT=0
 

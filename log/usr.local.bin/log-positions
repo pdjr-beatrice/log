@@ -100,7 +100,7 @@ for FILENAME in ${FILESPECS} ; do
     if [ "${SELECTOR}" == "last" ] ; then POSITIONS=( "${POSITIONS[-1]}" ) ; fi
 
     for line in "${POSITIONS[@]}" ; do
-      date=${line:0:20}
+      date=${line%% *}
       position_json=$( sed -e 's/.*POSITION //' <<<${line} )
       lat=$(echo "${position_json}" | ${JQ} -j '.latitude')
       lon=$(echo "${position_json}" | ${JQ} -j '.longitude')
