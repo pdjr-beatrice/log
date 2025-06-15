@@ -100,11 +100,6 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
     fi
 
 
-    ITEM_IS_UNIQUE=
-    if [ "${LABEL:0:1}" == "!" ] ; then
-      LABEL=${LABEL:1}
-      ITEM_IS_UNIQUE=yes
-    fi
 
     if [ "${LABEL:0:1}" == ">" ] ; then
       LABEL=${LABEL:1}
@@ -120,6 +115,12 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
       else
         DOIT=0
       fi
+    fi
+
+    ITEM_IS_UNIQUE=
+    if [ "${LABEL:0:1}" == "!" ] ; then
+      LABEL=${LABEL:1}
+      ITEM_IS_UNIQUE=yes
     fi
 
     if [ "${VALUE}" ] ; then
