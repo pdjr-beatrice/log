@@ -8,7 +8,7 @@ file.
 Each rule gives a description for the associated log entry, specifies
 the format of the entry data, and supplies either a constant value or,
 more usually, an HTTP API query from which the entry data can be
-retrieved. 
+retrieved.
 
 `log.cfg` is read by the `log-update` script which processes rules is
 specified paragraphs to generate entries in the daily log.
@@ -36,15 +36,27 @@ rules which will be automatically executed each time `log-update`
 creates a new daily log file, thus generating a consistent set of log
 entries at the beginning of every log.
 
-The `[RUN]` paragraph name is user defined and its contained rules will
-only be processed when when the paragraph name 'run' is passed as an
-argument to `log-update`.
-
-The significant rule in both paragraphs is:
+In the example file there is only this one rule (although any number
+could be listed):
 
 ```none
 Position POSITION /signalk/v1/api/vessels/self/navigation/position
 ```
+
+This rule forces an entry called "Position" containing a value of type
+`POSITION` to be written into a daily log file as soon as it is created
+by a call to `log-update`.
+The log file entry will look something like this:
+
+```
+2025-06-12T00:00:01_CEST [2025-06-11T22:00:03.260Z] Position POSITION { "latitude": 51.688248, "longitude": 5.318650 }
+```
+
+The `[RUN]` paragraph name is user defined and its contained rules will
+only be processed when when the paragraph name 'run' is passed as an
+argument to `log-update`.
+
+
 
 
 
