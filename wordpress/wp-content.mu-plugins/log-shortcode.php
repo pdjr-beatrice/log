@@ -3,9 +3,43 @@
 #
 # [log url="some_log_file"]
 
-function log_get($regex, $content, $full=0) {
-  $sel = array_filter($content, function($v) use($regex){ return(preg_match($regex, $v)); });
-  if (!$full) $sel = array_map(function($v) { $m = preg_split('/ /',$v,5); return($m[4]); }, $sel);
+function log_get($regex, $content) {
+  $sel = array_reduce($content, function($carry, $line) use($regex) {
+    if (preg_match($regex, $line) == 1) {
+      $fields = preg_split("/ /", $line);
+      $retval = [ "logdate" => "", "skdate" => "", "label" => "", "type" => "", "value" => "" ];
+      $next = 0;
+      foreach ($fields as $field) {
+        switch ($next) {
+          case 0:
+            $retval["logdate"] = $field;
+	    $next++;
+	    break;
+          case 1:
+            $retval["skdate"] = $field;
+	    $next++;
+	    break;
+	  case 2:
+            if (ctype_upper($field) && (strlen($field) > 4)) {
+              $retval["type"] = $field;
+	      $next = 4;
+            } else { 
+              $retval["label"] .= ($field . " ");
+	    }
+	    break;
+	  case 4:
+	    $retval["value"] .= ($field . " ");
+	    break;
+        }
+      }
+      $retval["label"] = trim($retval["label"]);
+      $retval["value"] = trim($retval["value"]);
+      $carry[] = $retval;
+      return($carry);
+    } else {
+      return($carry);
+    }
+  }, []);
   return(array_values($sel));
 }
 
@@ -19,7 +53,7 @@ function log_get_last($regex, $content) {
   return(count($sel)?$sel[count($sel)-1]:"");
 }
 
-function render_heading($c1,$c2, $c3) {
+function render_heading($c1,$c2,$c3) {
   $retval = "<div style='display: flex; flex-direction: row; width: 100%;'>";
   $retval .= "<div style='flex: 0.3; font-weight: bold;'>" . $c1 . "</div>";
   $retval .= "<div style='flex: 0.35; font-weight: bold;'>" . $c2 . "</div>";
@@ -28,16 +62,14 @@ function render_heading($c1,$c2, $c3) {
   return($retval);
 }
  
-function render_entry($content, $regex, $title, $f1, $f2=null, $p=0) {
+function render_entry($title, $v1, $v2=null) {
   $retval = "<div style='display: flex; flex-direction: row; width: 100%;'>";
   $retval .= "<div style='flex: 0.3;'>" . $title . "</div>";
-  $v1 = $f1($regex, $content);
-  if ($f2) {
-    $retval .= "<div style='flex: 0.35'>" . prettify($v1, $p) . "</div>";
-    $v2 = $f2($regex, $content);
-    $retval .= "<div style='flex: 0.35'>" . prettify($v2, $p) . "</div>";
+  if ($v2) {
+    $retval .= "<div style='flex: 0.35'>" . prettify($v1) . "</div>";
+    $retval .= "<div style='flex: 0.35'>" . prettify($v2) . "</div>";
   } else {
-    $retval .= "<div style='flex: 0.7'>" . prettify($v1, $p) . "</div>";
+    $retval .= "<div style='flex: 0.7'>" . prettify($v1) . "</div>";
   }
   $retval .= "</div>";
   return($retval);
@@ -47,9 +79,9 @@ function render_navigation_log($content) {
 $retval =<<<JS
 <div style='display: flex; flex-direction: column; width: 100%; background: #E0E000;'>
 JS;
-$retval .= render_entry($content, "/ENGINE State/", "Engine run time (hh:mm)", "runtime");
-$retval .= render_entry($content, "/GENERATOR State/", "Generator run time (hh:mm)", "runtime");
-$retval .= render_entry($content, "/POSITION/", "Distance travelled (km)", "distance");
+$retval .= render_entry("Engine run time (hh:mm)", runtime(log_get("/Main engine STATE/", $content)));
+$retval .= render_entry("Generator run time (hh:mm)", runtime(log_get("/Generator STATE/", $content)));
+$retval .= render_entry("Distance travelled (km)", distance(log_get("/POSITION/", $content)));
 $retval .= "</div>";
 return($retval);
 }
@@ -59,13 +91,12 @@ $retval =<<<JS
 <div style='display: flex; flex-direction: column; width: 100%; background: #E0E000;'>
 JS;
 $retval .= render_heading("", "Start of day", "End of day");
-$retval .= render_entry($content, "/POSITION/", "Position (lat, lng)", "log_get_first", "log_get_last");
-$retval .= render_entry($content, "/BATTERYSTATE Domestic/", "Battery SOC (%)", "log_get_first", "log_get_last", 1);
-$retval .= render_entry($content, "/TANKLEVEL Wastewater/", "Waste water (%)", "log_get_first", "log_get_last", 1);
-$retval .= render_entry($content, "/TANKLEVEL FreshwaterSB/", "SB fresh water (%)", "log_get_first", "log_get_last", 1);
-$retval .= render_entry($content, "/TANKLEVEL FreshwaterPS/", "PS fresh water (%)", "log_get_first", "log_get_last", 1);
-$retval .= render_entry($content, "/TANKLEVEL FuelSB/", "SB fuel (%)", "log_get_first", "log_get_last", 1);
-$retval .= render_entry($content, "/TANKLEVEL FuelPS/", "PS fuel (%)", "log_get_first", "log_get_last", 1);
+$initBlock = [];
+foreach ($content as $line) { if (strlen(trim($line)) == 0) break; $initBlock[] = $line; }
+$initRecords = log_get("/^/", $initBlock);
+foreach ($initRecords as $record) {
+  $retval .= render_entry($record["label"], log_get_first(preg_quote("/" . $record["label"] . " " . $record["type"] . "/"), $content)["value"], log_get_last(preg_quote("/" .$record["label"] . " " . $record["type"] . "/"), $content)["value"]);  
+}
 $retval .= "</div>";
 return($retval);
 }
@@ -105,15 +136,13 @@ function renderCollapseControl($containerId, $text) {
 	return("<a href='javascript:void(0);' class='collapse-control' onClick='document.querySelector(\"#" . $containerId . ".collapse-content\").style.display = \"flex\"; document.querySelector(\"#" . $containerId . ".collapse-control\").style.display = \"none\";'>" . $text . "</a>");
 }
 
-function runtime($regex, $content) {
+function runtime($entries) {
   $retval = "0:00";
-  $sel = log_get($regex, $content, 1);
   $total = 0;
   $start = 0;
-  for ($i = 0; $i < count($sel); $i++) {
-    $m = preg_split('/ /', $sel[$i], 5);
-    $timestamp = $m[0];
-    $value = $m[4];
+  foreach ($entries as $entry) {
+    $timestamp = str_replace('_', ' ', $entry["logdate"]);
+    $value = $entry["value"];
     if ($value == 1) $start = strtotime($timestamp);
     if (($value == 0) && ($start != 0)) {
       $total += strtotime($timestamp) - $start;
@@ -126,13 +155,12 @@ function runtime($regex, $content) {
   return($h . ":" . $m);
 }
 
-function distance($regex, $content) {
-  $sel = log_get($regex, $content);
+function distance($entries) {
   $distance = 0;
-  if (count($sel) > 1) {
-    $p1 = $sel[0];
-    for ($i = 1; $i < count($sel); $i++) {
-      $p2 = $sel[$i];
+  if (count($entries) > 1) {
+    $p1 = $entries[0]["value"];
+    for ($i = 1; $i < count($entries); $i++) {
+      $p2 = $entries[$i]["value"];
       $distance += haversineGreatCircleDistance(lat($p1), lon($p1), lat($p2), lon($p2));
       $p1 = $p2;
     }
@@ -156,13 +184,12 @@ function lon($position) {
   return($retval);
 }
 
-function prettify($value, $percent) {
+function prettify($value) {
   $retval = "ERR";
   $json = json_decode($value, true);
   if (($json) && is_array($json)) {
     if ($json["latitude"] && $json["longitude"]) $retval = $json["latitude"] . ", " . $json["longitude"];
   } else {
-    if ($percent) $value = round((float) $value * 100);
     $retval = $value;
   }
   return($retval);
@@ -190,7 +217,7 @@ function log_func($atts, $content = null) {
     if ($content = file($path)) {
       $retval =  "<br>" . render_navigation_log($content);
       $retval .= "<br>" . render_equipment_log($content);
-      $retval .= "<br>" . render_vessel_log(basename($date, '.log'));
+      #$retval .= "<br>" . render_vessel_log(basename($date, '.log'));
       $retval .= "<script src='https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js'></script>";
       $retval .= "<script src='https://cdn.jsdelivr.net/npm/chart.js@2.8.0'></script>";
       $retval .= "<script src='/log.js'></script>";
