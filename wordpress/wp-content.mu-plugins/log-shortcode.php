@@ -53,52 +53,68 @@ function log_get_last($regex, $content) {
   return(count($sel)?$sel[count($sel)-1]:"");
 }
 
-function render_heading($c1,$c2,$c3) {
+function render_heading($c1, $c2=null, $c3=null, $c4=null) {
   $retval = "<div style='display: flex; flex-direction: row; width: 100%;'>";
-  $retval .= "<div style='flex: 0.3; font-weight: bold;'>" . $c1 . "</div>";
-  $retval .= "<div style='flex: 0.35; font-weight: bold;'>" . $c2 . "</div>";
-  $retval .= "<div style='flex: 0.35; font-weight: bold;'>" . $c3 . "</div>";
+  if (!$c2) {
+    $retval .= "<div style='flex: 1.0; font-weight: bold;'>" . $c1 . "</div>";
+  } elseif (!$c3) {
+    $retval .= "<div style='flex: 0.5; font-weight: bold;'>" . $c1 . "</div>";
+    $retval .= "<div style='flex: 0.5; font-weight: bold;'>" . $c2 . "</div>";
+  } elseif (!$c4) {
+    $retval .= "<div style='flex: 0.34; font-weight: bold;'>" . $c1 . "</div>";
+    $retval .= "<div style='flex: 0.33; font-weight: bold;'>" . $c2 . "</div>";
+    $retval .= "<div style='flex: 0.33; font-weight: bold;'>" . $c3 . "</div>";
+  } else {
+    $retval .= "<div style='flex: 0.25; font-weight: bold;'>" . $c1 . "</div>";
+    $retval .= "<div style='flex: 0.25; font-weight: bold;'>" . $c2 . "</div>";
+    $retval .= "<div style='flex: 0.25; font-weight: bold;'>" . $c3 . "</div>";
+    $retval .= "<div style='flex: 0.25; font-weight: bold;'>" . $c4 . "</div>";
+  }
   $retval .= "</div>";
   return($retval);
 }
  
-function render_entry($title, $v1, $v2=null) {
+function render_entry($v1, $v2=null, $v3=null, $v4=null) {
   $retval = "<div style='display: flex; flex-direction: row; width: 100%;'>";
-  $retval .= "<div style='flex: 0.3;'>" . $title . "</div>";
-  if ($v2) {
-    $retval .= "<div style='flex: 0.35'>" . prettify($v1) . "</div>";
-    $retval .= "<div style='flex: 0.35'>" . prettify($v2) . "</div>";
+  if (!$v2) {
+    $retval .= "<div style='flex: 1.0;'>" . prettify($v1) . "</div>";
+  } elseif (!$v3) {
+    $retval .= "<div style='flex: 0.5;'>" . prettify($v1) . "</div>";
+    $retval .= "<div style='flex: 0.5;'>" . prettify($v2) . "</div>";
+  } elseif (!$v4) {
+    $retval .= "<div style='flex: 0.34;'>" . prettify($v1) . "</div>";
+    $retval .= "<div style='flex: 0.33;'>" . prettify($v2) . "</div>";
+    $retval .= "<div style='flex: 0.33;'>" . prettify($v3) . "</div>";
   } else {
-    $retval .= "<div style='flex: 0.7'>" . prettify($v1) . "</div>";
+    $retval .= "<div style='flex: 0.25;'>" . prettify($v1) . "</div>";
+    $retval .= "<div style='flex: 0.25;'>" . prettify($v2) . "</div>";
+    $retval .= "<div style='flex: 0.25;'>" . prettify($v3) . "</div>";
+    $retval .= "<div style='flex: 0.25;'>" . prettify($v4) . "</div>";
   }
   $retval .= "</div>";
   return($retval);
 }
 
 function render_navigation_log($content) {
-$retval =<<<JS
-<div style='display: flex; flex-direction: column; width: 100%; background: #E0E000;'>
-JS;
-$retval .= render_entry("Engine run time (hh:mm)", runtime(log_get("/Main engine STATE/", $content)));
-$retval .= render_entry("Generator run time (hh:mm)", runtime(log_get("/Generator STATE/", $content)));
-$retval .= render_entry("Distance travelled (km)", distance(log_get("/POSITION/", $content)));
-$retval .= "</div>";
-return($retval);
+  $retval = "<div style='display: flex; flex-direction: column; width: 100%; background: #E0E000;'>";
+  $retval .= render_entry("Engine run time (hh:mm)", runtime(log_get("/Main engine STATE/", $content)));
+  $retval .= render_entry("Generator run time (hh:mm)", runtime(log_get("/Generator STATE/", $content)));
+  $retval .= render_entry("Distance travelled (km)", distance(log_get("/POSITION/", $content)));
+  $retval .= "</div>";
+  return($retval);
 }
 
 function render_equipment_log($content) {
-$retval =<<<JS
-<div style='display: flex; flex-direction: column; width: 100%; background: #E0E000;'>
-JS;
-$retval .= render_heading("", "Start of day", "End of day");
-$initBlock = [];
-foreach ($content as $line) { if (strlen(trim($line)) == 0) break; $initBlock[] = $line; }
-$initRecords = log_get("/^/", $initBlock);
-foreach ($initRecords as $record) {
-  $retval .= render_entry($record["label"], log_get_first(preg_quote("/" . $record["label"] . " " . $record["type"] . "/"), $content)["value"], log_get_last(preg_quote("/" .$record["label"] . " " . $record["type"] . "/"), $content)["value"]);  
-}
-$retval .= "</div>";
-return($retval);
+  $retval = "<div style='display: flex; flex-direction: column; width: 100%; background: #E0E000;'>";
+  $retval .= render_heading("", "Start of day", "End of day");
+  $initBlock = [];
+  foreach ($content as $line) { if (strlen(trim($line)) == 0) break; $initBlock[] = $line; }
+  $initRecords = log_get("/^/", $initBlock);
+  foreach ($initRecords as $record) {
+    $retval .= render_entry($record["label"], log_get_first(preg_quote("/" . $record["label"] . " " . $record["type"] . "/"), $content)["value"], log_get_last(preg_quote("/" .$record["label"] . " " . $record["type"] . "/"), $content)["value"]);  
+  }
+  $retval .= "</div>";
+  return($retval);
 }
 
 function render_vessel_log($date) {
