@@ -158,4 +158,8 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
       done
     fi
   done <<< "${RULES}"
+
+  if [ "${PARAGRAPH_NAME}" == "INIT" ] ; then
+    echo "" >> ${LOGFILE_PATH}
+  fi
 done
