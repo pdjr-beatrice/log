@@ -64,8 +64,10 @@ LOG_UPDATE_VESSEL_PROXIMITY=1.0
 # HTTPS API query returning current position of host vessel.
 LOG_POSITION_QUERY="${LOG_UPDATE_SERVER_ADDRESS}/signalk/v1/api/vessels/self/navigation/position/value"
 
-LOG_POSITIONS_POSITION_TOKEN="POSITION"
-LOG_POSITIONS_ENGINE_STATE_TOKEN="Main engine STATE"
+# log-positions script defaults ########################################
+#
+LOG_POSITIONS_POSITION_PATTERN="POSITION"
+LOG_POSITIONS_ENGINE_STATE_PATTERN="Main engine STATE"
 
 LOG_EMAIL_TEMPORARY_STATIC_MAP="/tmp/map.png"
 LOGEMAIL_DEFAULT_REPORT_TEMPLATE=/usr/local/etc/log-report.template

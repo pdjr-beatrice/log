@@ -48,14 +48,14 @@
 #
 #   The script selects position and engine state records from log files
 #   using a simple grep filter which selects using token values defined
-#   in the log.defs variables LOG_POSITIONS_POSITION_TOKEN and
-#   LOG_POSITIONS_ENGINE_STATE_TOKEN respectively.
+#   in the log.defs variables LOG_POSITIONS_POSITION_PATTERN and
+#   LOG_POSITIONS_ENGINE_STATE_PATTERN respectively.
 #
 #   The -p option can be used to introduce a token value which will
-#   override LOG_POSITIONS_POSITION_TOKEN.
+#   override LOG_POSITIONS_POSITION_PATTERN.
 #
 #   The -e option can be used to introduce a token value which will
-#   override LOG_POSITIONS_ENGINE_STATE_TOKEN.
+#   override LOG_POSITIONS_ENGINE_STATE_PATTERN.
 #
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
@@ -65,14 +65,14 @@
 FILESPECS=
 POSITION_TYPE=positions
 SELECTOR=all
-POSITION_TOKEN="${LOG_POSITIONS_POSITION_TOKEN}"
-ENGINE_STATE_TOKEN="${LOG_POSITIONS_ENGINE_STATE_TOKEN}"
+POSITION_PATTERN="${LOG_POSITIONS_POSITION_PATTERN}"
+ENGINE_STATE_PATTERN="${LOG_POSITIONS_ENGINE_STATE_PATTERN}"
 
 while  [ "${1}" != "" ] ; do
   case ${1} in
     -e)
       shift
-      ENGINE_STATE_TOKEN="${1}"
+      ENGINE_STATE_PATTERN="${1}"
       ;;
     -f)
       SELECTOR=first
@@ -86,7 +86,7 @@ while  [ "${1}" != "" ] ; do
       ;;
     -p)
       shift
-      POSITION_TOKEN="${1}"
+      POSITION_PATTERN="${1}"
       ;;
     -s)
       POSITION_TYPE=stops
@@ -100,8 +100,8 @@ while  [ "${1}" != "" ] ; do
   shift
 done
 
-if [ ! "${ENGINE_STATE_TOKEN}" ] ; then echo "${0}: -e option must introduce an engine stop token" ; exit 1; fi
-if [ ! "${POSITION_TOKEN}" ] ; then echo "${0}: -p option must introduce a position token" ; exit 1; fi
+if [ ! "${ENGINE_STATE_PATTERN}" ] ; then echo "${0}: -e option must introduce an engine stop token" ; exit 1; fi
+if [ ! "${POSITION_PATTERN}" ] ; then echo "${0}: -p option must introduce a position token" ; exit 1; fi
 
 if [ ! "${FILESPECS}" ] ; then FILESPECS="${LOGDIR}$(${DATE} +%Y%m%d)" ; fi
 
@@ -109,12 +109,12 @@ for FILENAME in ${FILESPECS} ; do
   POSITIONS=()
   case ${POSITION_TYPE} in
     positions)
-      readarray -t POSITIONS <<<$( ${GREP} -h "${POSITION_TOKEN}" ${FILENAME} )
+      readarray -t POSITIONS <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
       ;;
     stops)
-      readarray -t FIRSTPOSITION <<<$( ${GREP} -h "${POSITION_TOKEN}\|${ENGINE_STATE_TOKEN}" ${FILENAME} | ${GREP} -A1 "${ENGINE_STATE_TOKEN} 1" | ${GREP} -m1 "${POSITION_TOKEN}" )
+      readarray -t FIRSTPOSITION <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} | ${GREP} -A1 "${ENGINE_STATE_PATTERN} 1" | ${GREP} -m1 "${POSITION_PATTERN}" )
       if [ "${FIRSTPOSITION[0]}" == "" ] ; then FIRSTPOSITION=(); fi
-      readarray -t OTHERPOSITIONS <<<$( ${GREP} -h "${POSITION_TOKEN}\|${ENGINE_STATE_TOKEN}" ${FILENAME} | ${GREP} -B1 "${ENGINE_STATE_TOKEN} 0" | ${GREP} "${POSITION_TOKEN}" )
+      readarray -t OTHERPOSITIONS <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} | ${GREP} -B1 "${ENGINE_STATE_PATTERN} 0" | ${GREP} "${POSITION_PATTERN}" )
       if [ ${#FIRSTPOSITION} -gt 0 ] ; then OTHERPOSITIONS=("${OTHERPOSITIONS[@]:1}") ; fi
       POSITIONS=( "${FIRSTPOSITION[@]}" "${OTHERPOSITIONS[@]}" )
       ;;
