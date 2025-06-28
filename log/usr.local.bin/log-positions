@@ -5,33 +5,40 @@
 #   log files.
 #
 # SYNOPSIS
-#   log-positions -s -f -l [logfile...]
+#   log-positions [-e token] [-f] [-l] [-p token] [-s] [logfile...]
 #   log-positions -h
 #
 # DESCRIPTION
+#   Output a newline separated list of JSON encoded position records
+#   from one or more log files. Each record has the format:
 #
-#   Output a list of JSON encoded position records from one or more
-#   log files.
+#   { "latitude": lat, "longitude": lon, "date": "date" }
+#
+#   where lat and lon are decimal degrees and date is a time string.
 #
 #   If logfile is ommitted, then the output will be drawn from the
-#   current (todays) log file.
-#
-#   logfile arguments are processed in the order in which they occur
-#   and can have any of the following formats:
+#   current (todays) log file, otherwise logfile arguments are
+#   processed in the order in which they occur and can have any of
+#   the following formats:
 #
 #   YYYY selects all the log files for the specified year;
 #   YYYYMM selects all the log files for the specified month;
 #   YYYYMMDD selects the log file for the specified day.
 #
 #   With no options, the script outputs records for every position
-#   recorded in the specified logfiles.
+#   recorded in the specified logfiles. Multiple records typically
+#   represent the track of the vessel whilst navigating.
 #
 #   The -s option restricts output to just positions which represent
-#   a stop: this means any position report that immediately preceeds
-#   an engine stop.
-#   An engine stop is identified as log record containing the text
-#   'Main engine STATE 0', but this text can be overriden using the
-#   -e option.
+#   a stop. Stops are computed in the following way:
+#
+#   1. If there is only one position in the log file then it is
+#      returned (on the assumption that the vessel was moored or
+#      otherwise at rest).
+#
+#   2. Otherwise, the position following the first engine start is
+#      returned, followed by all positions that immediately precede
+#      an engine stop.
 #
 #   The -f option restricts output to the first position of those
 #   selected.
@@ -39,9 +46,16 @@
 #   The -l option restricts output to the last position of those
 #   selected.
 #
-#   The script outputs records of the form:
+#   The script selects position and engine state records from log files
+#   using a simple grep filter which selects using token values defined
+#   in the log.defs variables LOG_POSITIONS_POSITION_PATTERN and
+#   LOG_POSITIONS_ENGINE_STATE_PATTERN respectively.
 #
-#   { "latitude": lat, "longitude": lng, "date": "YYYY-MM-DDThh:mm:ssZ" }
+#   The -p option can be used to introduce a token value which will
+#   override LOG_POSITIONS_POSITION_PATTERN.
+#
+#   The -e option can be used to introduce a token value which will
+#   override LOG_POSITIONS_ENGINE_STATE_PATTERN.
 #
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
@@ -51,12 +65,14 @@
 FILESPECS=
 POSITION_TYPE=positions
 SELECTOR=all
-ENGINE_STOP="Main engine STATE 0"
+POSITION_PATTERN="${LOG_POSITIONS_POSITION_PATTERN}"
+ENGINE_STATE_PATTERN="${LOG_POSITIONS_ENGINE_STATE_PATTERN}"
 
 while  [ "${1}" != "" ] ; do
   case ${1} in
     -e)
-      ENGINE_STOP=${1}
+      shift
+      ENGINE_STATE_PATTERN="${1}"
       ;;
     -f)
       SELECTOR=first
@@ -65,11 +81,15 @@ while  [ "${1}" != "" ] ; do
       ${SED} -e '/^$/,$d' ${0}
       exit 0
       ;;
-    -s)
-      POSITION_TYPE=stops
-      ;;
     -l)
       SELECTOR=last
+      ;;
+    -p)
+      shift
+      POSITION_PATTERN="${1}"
+      ;;
+    -s)
+      POSITION_TYPE=stops
       ;;
     *)
       FILESPEC=${1}
@@ -80,7 +100,8 @@ while  [ "${1}" != "" ] ; do
   shift
 done
 
-if [ ! "${ENGINE_STOP}" ] ; then echo "log-position: -e option must introduce an engine stop token" ; exit 1; fi
+if [ ! "${ENGINE_STATE_PATTERN}" ] ; then echo "${0}: -e option must introduce an engine stop token" ; exit 1; fi
+if [ ! "${POSITION_PATTERN}" ] ; then echo "${0}: -p option must introduce a position token" ; exit 1; fi
 
 if [ ! "${FILESPECS}" ] ; then FILESPECS="${LOGDIR}$(${DATE} +%Y%m%d)" ; fi
 
@@ -88,10 +109,14 @@ for FILENAME in ${FILESPECS} ; do
   POSITIONS=()
   case ${POSITION_TYPE} in
     positions)
-      readarray -t POSITIONS <<<$( ${GREP} -h 'POSITION' ${FILENAME} )
+      readarray -t POSITIONS <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
       ;;
     stops)
-      readarray -t POSITIONS <<<$( ${GREP} -h 'POSITION\|Main engine STATE' ${FILENAME} | ${GREP} -B1 'STATE 0' | ${GREP} 'POSITION' )
+      readarray -t FIRSTPOSITION <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} | ${GREP} -A1 "${ENGINE_STATE_PATTERN} 1" | ${GREP} -m1 "${POSITION_PATTERN}" )
+      if [ "${FIRSTPOSITION[0]}" == "" ] ; then FIRSTPOSITION=(); fi
+      readarray -t OTHERPOSITIONS <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} | ${GREP} -B1 "${ENGINE_STATE_PATTERN} 0" | ${GREP} "${POSITION_PATTERN}" )
+      if [ ${#FIRSTPOSITION} -gt 0 ] ; then OTHERPOSITIONS=("${OTHERPOSITIONS[@]:1}") ; fi
+      POSITIONS=( "${FIRSTPOSITION[@]}" "${OTHERPOSITIONS[@]}" )
       ;;
   esac
 
