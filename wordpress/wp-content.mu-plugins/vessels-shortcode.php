@@ -48,19 +48,19 @@ function maintain_vessel_digest($ignore) {
       $lastLogProcessed = $logFileDate;
       foreach(preg_grep("/VESSEL/", file($logFileName)) as $line) {
         $fields = explode(" ", $line, 5);
-	if (!str_contains($ignore, $fields[3])) {
+	if (!str_contains($ignore, $fields[2])) {
           $vesselJSON = json_decode($fields[4], false);
           $vesselMmsi = $vesselJSON->mmsi;
 
           if (property_exists($vesselsJSON, $vesselMmsi)) {
             $contact = (object)[
-              'date'=>strtotime($fields[0]),
+              'date'=>strtotime(substr($fields[0],0,19)),
               'position'=>$vesselJSON->position
             ];
             $vesselsJSON->$vesselMmsi->contacts[] = $contact;
           } else {
             $contact = (object)[
-              'date'=>strtotime($fields[0]),
+              'date'=>strtotime(substr($fields[0],0,19)),
               'position'=>$vesselJSON->position
             ];
             $vesselsJSON->$vesselMmsi = (object)[
