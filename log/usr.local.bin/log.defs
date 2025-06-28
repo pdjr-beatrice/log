@@ -95,42 +95,65 @@ minutes2hm() {
 # ${2} - raw value to be stored (from Signal K)
 #
 normalise() {
+  local retval=1
+
   if [ "${1}" ] && [ "${2}" ] ; then
     case ${1} in
-      PERCENT)
+      PERCENT) # Convert a ratio in ${2} to a percentage with 0 decimal places
         echo $( printf %.0f $( echo "a=${2}*100.0;scale=4;a/1" | ${BC} -l ) )
+        retval=0
         ;;
-      POSITION)
+      POSITION) # Convert a JSON position in ${2} to canonical form. 
         local lat=$(echo "${2}" | ${JQ} -j '.latitude')
-        local lon=$(echo "${2}" | ${JQ} -j '.longitude')
-        echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f }" ${lat} ${lon} )
+        if [ "${lat}" != "0.000000" ] ; then
+          local lon=$(echo "${2}" | ${JQ} -j '.longitude')
+          if [ "${lon}" != "0.000000" ] ; then
+            echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f }" ${lat} ${lon} )
+            retval=0
+          fi
+        fi
         ;;
-      RATIO)
+      RATIO) # Round an arbitrary ratio in ${2} to 4 decimal places
         echo $( printf %0.4f $( echo "a=${2};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l ) )
         ;;
-      STATE)
-        echo ${2}
+      STATE) # Convert an arbitrary value in ${2} to 0 or 1 
+        if [ "${2}" == "0" ] ; then
+          echo "0"
+        else
+          echo "1"
+        fi
+        retval=0
         ;;
       SWITCHBANKS)
         echo $( echo "${2}" | ${JQ} -j '.[] | .[] | .state.value' )
+        retval=0
         ;;
       VESSEL)
-        local position=$( wget -q -O - "${LOG_POSITION_QUERY}" | tr -d '\012' )
-        if [ "${position}" != "" ] ; then
+        local position=`normalise POSITION "$( wget -q -O - "${LOG_POSITION_QUERY}" | tr -d '\012' )"`
+        if [ $? -eq 0 ] ; then
           readarray -t vessels <<<$( echo "${2}" | ${JQ} -j '.[] | select(.name | length > 0) | "{ \"mmsi\": \"" + .mmsi + "\", \"name\": \"" + .name + "\", \"position\": " + (.navigation.position.value|tostring) + " }\n"' )
           for vessel in "${vessels[@]}" ; do
-            local vesselposition=$(echo "${vessel}" | ${JQ} -j '.position|tostring' )
-            local separation=$( echo -e "${position}\n${vesselposition}" | ${PYTHON} ${LOGTRIPSCRIPT} )
-            if [ $( echo "${separation} < ${LOG_UPDATE_VESSEL_PROXIMITY}" | ${BC} -l ) -eq 1 ] ; then echo ${vessel}; fi
+            local vesselmmsi="$(echo "${vessel}" | ${JQ} -j '.mmsi|tostring')"
+            if [ "${vesselmmsi}" != "" ] ; then
+              local vesselname="$(echo "${vessel}" | ${JQ} -j '.name|tostring')"
+              if [ "${vesselname}" != "" ] ; then
+                local vesselposition=`normalise POSITION "$(echo "${vessel}" | ${JQ} -j '.position|tostring' )"`
+                if [ $? -eq 0 ] ; then
+                  local separation=$( echo -e "${position}\n${vesselposition}" | ${PYTHON} ${LOGTRIPSCRIPT} )
+                  if [ $( echo "${separation} < ${LOG_UPDATE_VESSEL_PROXIMITY}" | ${BC} -l ) -eq 1 ] ; then echo ${vessel}; fi
+                fi
+              fi
+            fi
           done
         fi
+        retval=0
         ;;
       *)
         echo ""
         ;;
     esac
   fi
-  echo ""
+  return ${retval}
 }
 
 # Compare two log entries for equivalence, returning 0 if equal, otherwise 1.
