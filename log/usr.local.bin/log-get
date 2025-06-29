@@ -73,7 +73,21 @@ fi
 
 if [ ! ${FILESPECS} ] ; then FILESPECS="${LOGDIR}$(${DATE} +'%Y%m%d')" ; fi
 
-RECORDS=$(${CAT} ${FILESPECS} | ${GREP} "${OPTION_REGEX}") 
+readarray -t RECORDS <<<$(${CAT} ${FILESPECS} | ${GREP} "${OPTION_REGEX}") 
+
+if [ ${#RECORDS[@]} -gt 0 ] ; then
+  if [ "${OPTION_RESTRICTION}" == "first" ] ; then RECORDS=( "${RECORDS[0]}" ) ; fi
+  if [ "${OPTION_RESTRICTION}" == "last" ] ; then RECORDS=( "${RECORDS[-1]}" ) ; fi
+
+  for line in "${RECORDS[@]}" ; do
+    date=${line%% *}
+    value=$( ${SED} -e 's/.*[A-Z]+ //' <<<${line} )
+      lat=$(echo "${position_json}" | ${JQ} -j '.latitude')
+      lon=$(echo "${position_json}" | ${JQ} -j '.longitude')
+      echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
+    done
+  fi
+
 
 case $OPTION_RESTRICTION in
   first)
