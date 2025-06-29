@@ -154,7 +154,7 @@ generateVessels() {
   local vessels=()
   local marker="#vesselmarker"
 
-  readarray -t vessels <<<$( ${GREP} -hi "VESSEL" ${1} )
+  readarray -t vessels <<<$( ${LOGGET} "VESSEL" ${1} )
 
   echo "    <Folder id='${LOGFILE}-vessels'>"
   for vessel in "${vessels[@]}" ; do
