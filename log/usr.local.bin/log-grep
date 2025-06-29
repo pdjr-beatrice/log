@@ -73,7 +73,7 @@ fi
 
 if [ ! ${FILESPECS} ] ; then FILESPECS="${LOGDIR}$(${DATE} +'%Y%m%d')" ; fi
 
-readarray -t RECORDS <<<$(${CAT} ${FILESPECS} | ${GREP} "${OPTION_REGEX}") 
+readarray -t RECORDS <<<$( ${CAT} ${FILESPECS} | ${GREP} "${OPTION_REGEX}" ) 
 
 if [ ${#RECORDS[@]} -gt 0 ] ; then
   if [ "${OPTION_RESTRICTION}" == "first" ] ; then RECORDS=( "${RECORDS[0]}" ) ; fi
