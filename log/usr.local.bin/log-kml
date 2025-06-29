@@ -80,7 +80,7 @@ generateStops() {
 
   readarray -t stops < <( ${LOGPOSITIONS} -s ${1} )
   
-  echo "    <Folder id='${LOGFILE}-stops'>"
+  echo "    <Folder id='${1}-stops'>"
   for stop in "${stops[@]}" ; do
     if [ "${stop}" == "${stops[-1]}" ] ; then
       marker="#stopmarker"
@@ -125,7 +125,7 @@ generateTrack() {
   local positioncount=$(${GREP} -c '^' <<< "${positions}")
   local distance=$(${LOGTRIP} ${1})
   local hours=$(${LOGRUNTIME} ${1})
-  echo "    <Folder id='${LOGFILE}-track'>"
+  echo "    <Folder id='${1}-track'>"
   if [ ${positioncount} -gt 1 ] ; then
     echo "      <Placemark>"
     echo "        <name>PASSAGE</name>"
@@ -156,14 +156,15 @@ generateVessels() {
 
   readarray -t vessels <<<$( ${LOGGET} "VESSEL" ${1} )
 
-  echo "    <Folder id='${LOGFILE}-vessels'>"
+  echo "    <Folder id='${1}-vessels'>"
   for vessel in "${vessels[@]}" ; do
     local mmsi=$(echo ${vessel} | ${JQ} -j '.mmsi')
     local name=$(echo ${vessel} | ${JQ} -j '.name')
     local heading=$(echo ${vessel} | ${JQ} -j '.heading')
-    local longitude=$(echo ${stop} | ${JQ} -j '.position|.longitude')
-    local latitude=$(echo ${stop} | ${JQ} -j '.position|.latitude')
+    local longitude=$(echo ${stop} | ${JQ} -j '.position.longitude')
+    local latitude=$(echo ${stop} | ${JQ} -j '.position.latitude')
     local label="${name} (${mmsi})"
+    echo $latitude
     echo "      <Placemark>"
     echo "        <name>${name} (${mmsi})</name>"
     echo "        <description>"
