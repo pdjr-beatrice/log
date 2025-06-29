@@ -121,6 +121,7 @@ normalise() {
       RATIO)
         echo $( printf %0.4f $( echo "a=${2};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l ) )
         retval=0
+        ;;
       STATE) 
         if [ "${2}" == "0" ] ; then
           echo "0"
