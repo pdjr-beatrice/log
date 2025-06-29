@@ -20,7 +20,7 @@
 #   YYYYMMDD selects the log file for the specified day.
 #
 #   The selected log files are concatenated and filtered to extract
-#   records matching regex.
+#   the value fields of records matching regex.
 #
 #   The script supports the following command line options:
 #
