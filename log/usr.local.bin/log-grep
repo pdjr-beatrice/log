@@ -1,11 +1,11 @@
 #!/bin/bash
 #
 # NAME
-#   log-get - get records which match a regex from selected log files.
+#   log-grep - get records which match a regex from selected log files.
 #
 # SYNOPSIS
-#   log-get [-{f|l}] regex [logfile...]
-#   log-get -h
+#   log-grep [-f] [-l] regex [logfile...]
+#   log-grep -h
 #
 # DESCRIPTION
 #   If the script is invoked with no arguments, then it will operate as
@@ -66,7 +66,7 @@ while [ "$1" != "" ] ; do
 done
 
 if [ ! "${OPTION_REGEX}" ] ; then
-  echo "usage: log-get [-{f|l}] regex logfilespec..."
+  echo "usage: log-get [-f] [-l] regex logfilespec..."
   echo "usage: log-get -h"
   exit 1
 fi
