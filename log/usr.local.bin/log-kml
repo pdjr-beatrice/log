@@ -80,7 +80,7 @@ generateStops() {
 
   readarray -t stops < <( ${LOGPOSITIONS} -s ${1} )
   
-  echo "    <Folder id='${LOGFILE}-track'>"
+  echo "    <Folder id='${LOGFILE}-stops'>"
   for stop in "${stops[@]}" ; do
     if [ "${stop}" == "${stops[-1]}" ] ; then
       marker="#stopmarker"
@@ -125,8 +125,8 @@ generateTrack() {
   local positioncount=$(${GREP} -c '^' <<< "${positions}")
   local distance=$(${LOGTRIP} ${1})
   local hours=$(${LOGRUNTIME} ${1})
+  echo "    <Folder id='${LOGFILE}-track'>"
   if [ ${positioncount} -gt 1 ] ; then
-    echo "    <Folder id='${LOGFILE}-track'>"
     echo "      <Placemark>"
     echo "        <name>PASSAGE</name>"
     echo "        <description>"
@@ -145,8 +145,8 @@ generateTrack() {
     echo "          </coordinates>"
     echo "        </LineString>"
     echo "      </Placemark>"
-    echo "    </Folder>"
   fi
+  echo "    </Folder>"
   return 0
 }
 
