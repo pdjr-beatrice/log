@@ -83,7 +83,7 @@ if [ ${#RECORDS[@]} -gt 0 ] ; then
     date=${line%% *}
     skip=1
     for token in ${line} ; do
-      if [ $skip == 0 ] ; echo -n ${token} ; fi
+      if [ $skip == 0 ] ; then echo -n ${token} ; fi
       if [[ ${token} =~ ^[[:upper:]]$ ]] ; then skip=0 ; fi
     done
     echo ""
