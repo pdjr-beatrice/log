@@ -161,8 +161,8 @@ generateVessels() {
     local mmsi=$(echo ${vessel} | ${JQ} -j '.mmsi')
     local name=$(echo ${vessel} | ${JQ} -j '.name')
     local heading=$(echo ${vessel} | ${JQ} -j '.heading')
-    local longitude=$(echo ${stop} | ${JQ} -j '.position.longitude')
-    local latitude=$(echo ${stop} | ${JQ} -j '.position.latitude')
+    local longitude=$(echo ${stop} | ${JQ} -j '.position|.longitude')
+    local latitude=$(echo ${stop} | ${JQ} -j '.position|.latitude')
     local label="${name} (${mmsi})"
     echo "      <Placemark>"
     echo "        <name>${name} (${mmsi})</name>"
