@@ -104,11 +104,11 @@ normalise() {
 
   if [ "${1}" ] && [ "${2}" ] ; then
     case ${1} in
-      PERCENT) # Convert a ratio in ${2} to a percentage with 0 decimal places
+      PERCENT)
         echo $( printf %.0f $( echo "${2}*100.0" | ${BC} -l ) )
         retval=0
         ;;
-      POSITION) # Convert a JSON position in ${2} to canonical form. 
+      POSITION) 
         local lat=$(echo "${2}" | ${JQ} -j '.latitude')
         if [ "${lat}" != "0.000000" ] ; then
           local lon=$(echo "${2}" | ${JQ} -j '.longitude')
@@ -118,10 +118,10 @@ normalise() {
           fi
         fi
         ;;
-      RATIO) # Round an arbitrary ratio in ${2} to 4 decimal places
+      RATIO)
         echo $( printf %0.4f $( echo "a=${2};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l ) )
-        ;;
-      STATE) # Convert an arbitrary value in ${2} to 0 or 1 
+        retval=0
+      STATE) 
         if [ "${2}" == "0" ] ; then
           echo "0"
         else
@@ -146,14 +146,14 @@ normalise() {
                 if [ $? -eq 0 ] ; then
                   local separation=$( echo -e "${position}\n${vesselposition}" | ${PYTHON} ${LOGTRIPSCRIPT} )
                   if [ $( echo "${separation} < ${LOG_UPDATE_VESSEL_PROXIMITY}" | ${BC} -l ) -eq 1 ] ; then
-                    echo ${vessel};
+                    echo ${vessel}
+                    retval=0
                   fi
                 fi
               fi
             fi
           done
         fi
-        retval=0
         ;;
       *)
         echo ""
