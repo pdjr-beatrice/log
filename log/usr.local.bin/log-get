@@ -81,10 +81,15 @@ if [ ${#RECORDS[@]} -gt 0 ] ; then
 
   for line in "${RECORDS[@]}" ; do
     date=${line%% *}
-    skip=1
+    skip=0
+    tokens=0
     for token in ${line} ; do
-      if [ ${skip} -eq 0 ] ; then echo -n ${token} ; fi
-      if [[ ${token} =~ ^[[:upper:]]$ ]] ; then skip=0 ; fi
+      if [ ${skip} -eq 1 ] ; then
+        if [ ${tokens} -gt 0 ] ; then echo -n " " ; fi
+        echo -n "${token}"
+        let "tokens+=1"
+      fi
+      if [[ ${token} =~ ^[[:upper:]]{4,}+$ ]] ; then skip=1 ; fi
     done
     echo ""
   done
