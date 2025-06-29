@@ -81,7 +81,11 @@ if [ ${#RECORDS[@]} -gt 0 ] ; then
 
   for line in "${RECORDS[@]}" ; do
     date=${line%% *}
-    value=$( ${SED} -e 's/^[^\s]* [^\s]* .* [A-Z]\{4,\}\s//' <<<${line} )
-    echo ${value}
+    skip=1
+    for token in ${line} ; do
+      if [ $skip == 0 ] ; echo -n ${token} ; fi
+      if [[ ${token} =~ ^[[:upper:]]$ ]] ; then skip=0 ; fi
+    done
+    echo ""
   done
 fi
