@@ -161,10 +161,10 @@ generateVessels() {
     local mmsi=$(echo ${vessel} | ${JQ} -j '.mmsi')
     local name=$(echo ${vessel} | ${JQ} -j '.name')
     local heading=$(echo ${vessel} | ${JQ} -j '.heading')
-    local longitude=$(echo ${stop} | ${JQ} -j '.position.longitude')
-    local latitude=$(echo ${stop} | ${JQ} -j '.position.latitude')
+    local longitude=$(echo ${vessel} | ${JQ} -j '.position.longitude')
+    local latitude=$(echo ${vessel} | ${JQ} -j '.position.latitude')
     local label="${name} (${mmsi})"
-    echo $latitude
+    if [ "${latitude}" != "null" ] ; then
     echo "      <Placemark>"
     echo "        <name>${name} (${mmsi})</name>"
     echo "        <description>"
@@ -179,6 +179,7 @@ generateVessels() {
     echo "          </coordinates>"
     echo "        </Point>"
     echo "      </Placemark>"
+fi
   done
   echo "    </Folder>"
   return 0
@@ -235,7 +236,7 @@ echo "      <scale>0.5</scale>"
 echo "      <Icon>"
 echo "        <href>/beatrice/icons/circle-stroked-11.svg</href>"
 echo "      </Icon>"
-echo "      <hotSpot x='0.5' y='0' xunits='fraction' yunits='fraction'/>"
+echo "      <hotSpot x='0.5' y='0.5' xunits='fraction' yunits='fraction'/>"
 echo "    </IconStyle>"
 echo "  </Style>"
 

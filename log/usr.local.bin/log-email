@@ -183,7 +183,7 @@ EMAIL_BODY="${EMAIL_BODY}${WP_EMAIL_BODY_ANNEX}"$'\n'$'\n'
 # Generate KML attachment
 if [ "${OPTION_MAKE_KML}" == "yes" ] ; then
   KML_ATTACHMENT_FILENAME="/tmp/${LOGNAME}.kml"
-  ${LOGKML} -a ${LOGNAME} > "${KML_ATTACHMENT_FILENAME}"
+  ${LOGKML} -s -t -v ${LOGNAME} > "${KML_ATTACHMENT_FILENAME}"
   KML_ATTACHMENT_CLAUSE="--file-attach ${KML_ATTACHMENT_FILENAME}"
 fi
 
