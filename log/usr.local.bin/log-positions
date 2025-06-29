@@ -1,8 +1,7 @@
 #!/bin/bash
 #
 # NAME
-#   log-positions - generate a list of position coordinates from one or more
-#   log files.
+#   log-positions - extract position data from one or more log files.
 #
 # SYNOPSIS
 #   log-positions [-e token] [-f] [-l] [-p token] [-s] [logfile...]
