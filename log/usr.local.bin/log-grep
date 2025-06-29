@@ -66,8 +66,8 @@ while [ "$1" != "" ] ; do
 done
 
 if [ ! "${OPTION_REGEX}" ] ; then
-  echo "usage: log-get [-f] [-l] regex logfilespec..."
-  echo "usage: log-get -h"
+  echo "usage: log-grep [-f] [-l] regex logfilespec..."
+  echo "usage: log-grep -h"
   exit 1
 fi
 
