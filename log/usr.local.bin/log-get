@@ -81,22 +81,7 @@ if [ ${#RECORDS[@]} -gt 0 ] ; then
 
   for line in "${RECORDS[@]}" ; do
     date=${line%% *}
-    value=$( ${SED} -e 's/.*[A-Z]+ //' <<<${line} )
-      lat=$(echo "${position_json}" | ${JQ} -j '.latitude')
-      lon=$(echo "${position_json}" | ${JQ} -j '.longitude')
-      echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
-    done
-  fi
-
-
-case $OPTION_RESTRICTION in
-  first)
-    echo -n "${RECORDS}" | ${HEAD} -1
-    ;;
-  last)
-    echo -n "${RECORDS}" | ${TAIL} -1
-    ;;
-  *)
-    echo "${RECORDS}"
-    ;;
-esac
+    value=$( ${SED} -e 's/^[^\s]* [^\s]* .* [A-Z]\{4,\}\s//' <<<${line} )
+    echo ${value}
+  done
+fi
