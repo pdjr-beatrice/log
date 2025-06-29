@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # NAME
-#   log-get - get the value field from selected log file records.
+#   log-get - get records which match a regex from selected log files.
 #
 # SYNOPSIS
 #   log-get [-{f|l}] regex [logfile...]
@@ -20,8 +20,7 @@
 #   YYYYMMDD selects the log file for the specified day.
 #
 #   The selected log files are concatenated and filtered to extract
-#   records matching regex and the contained value fields are returned
-#   as a list.
+#   records matching regex.
 #
 #   The script supports the following command line options:
 #
@@ -30,8 +29,6 @@
 #   -h  displays this documentation.
 #
 #   -l  restricts output to just the last selected record.
-#
-#   -p  convert ratio values to OPTION_percentages
 #
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
@@ -42,7 +39,6 @@ FILESPECS=
 FILESPEC=
 OPTION_REGEX=
 OPTION_RESTRICTION=
-OPTION_PERCENT=
 
 while [ "$1" != "" ] ; do
   case $1 in
@@ -55,9 +51,6 @@ while [ "$1" != "" ] ; do
       ;;
     -l)
       OPTION_RESTRICTION="last"
-      ;;
-    -p)
-      OPTION_PERCENT=yes
       ;;
     *)
       if [ "${OPTION_REGEX}" == "" ] ; then
@@ -73,22 +66,14 @@ while [ "$1" != "" ] ; do
 done
 
 if [ ! "${OPTION_REGEX}" ] ; then
-  echo "usage: log-get [-{f|l}] [-p] regex logfilespec..."
+  echo "usage: log-get [-{f|l}] regex logfilespec..."
   echo "usage: log-get -h"
   exit 1
 fi
 
 if [ ! ${FILESPECS} ] ; then FILESPECS="${LOGDIR}$(${DATE} +'%Y%m%d')" ; fi
 
-RECORDS=$(${CAT} ${FILESPECS} | ${GREP} "${OPTION_REGEX}" | ${CUT} -d ' ' -f5-) 
-
-if [ "${OPTION_PERCENT}" == "yes" ] ; then
-  PROCESSEDRECORDS=
-  while read -r record ; do
-    PROCESSEDRECORDS="${PROCESSEDRECORDS}"$(echo "scale=0; (${record} * 100) / 1" | ${BC})$'\n'
-  done <<< "${RECORDS}"    
-  RECORDS="${PROCESSEDRECORDS}"
-fi
+RECORDS=$(${CAT} ${FILESPECS} | ${GREP} "${OPTION_REGEX}") 
 
 case $OPTION_RESTRICTION in
   first)
