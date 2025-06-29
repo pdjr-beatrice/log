@@ -117,7 +117,7 @@ generateStops() {
     markerlabel="HALT"
   done
   echo "    </Folder>"
-  exit 0
+  return 0
 }
 
 generateTrack() {
@@ -147,7 +147,7 @@ generateTrack() {
     echo "      </Placemark>"
     echo "    </Folder>"
   fi
-  exit 0
+  return 0
 }
 
 generateVessels() {
@@ -180,7 +180,7 @@ generateVessels() {
     echo "      </Placemark>"
   done
   echo "    </Folder>"
-  exit 0
+  return 0
 }
 
 echo "<?xml version='1.0' encoding='UTF-8'?>"
@@ -242,9 +242,9 @@ for FILENAME in ${FILESPECS} ; do
   LOGFILE=$( ${BASENAME} ${FILENAME} )
   echo "  <Folder id='${LOGFILE}'>"
 
-  if [ ${OPTION_GENERATE_STOPS} ] ; then generateStops "${LOGFILE}" ; fi
-  if [ ${OPTION_GENERATE_TRACK} ] ; then generateTrack "${LOGFILE}" ; fi
-  if [ ${OPTION_GENERATE_VESSELS} ] ; then generateVessels "${LOGFILE}" ; fi
+  if [ ${OPTION_GENERATE_STOPS} -eq 1 ] ; then generateStops "${LOGFILE}" ; fi
+  if [ ${OPTION_GENERATE_TRACK} -eq 1 ] ; then generateTrack "${LOGFILE}" ; fi
+  if [ ${OPTION_GENERATE_VESSELS} -eq 1 ] ; then generateVessels "${LOGFILE}" ; fi
 
   echo "  </Folder>"
 done
