@@ -1,7 +1,8 @@
 #!/bin/bash
 #
 # NAME
-#   log-grep - get records which match a regex from selected log files.
+#   log-grep - get the value field from log records which match a regex
+#   specified regular expression.
 #
 # SYNOPSIS
 #   log-grep [-f] [-l] regex [logfile...]
