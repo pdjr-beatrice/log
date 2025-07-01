@@ -42,9 +42,9 @@
 
 . /usr/local/bin/log.defs
 
-OPTION_GENERATE_STOPS=LOG_KML_OPTION_GENERATE_STOPS
-OPTION_GENERATE_TRACK=LOG_KML_OPTION_GENERATE_TRACK
-OPTION_GENERATE_VESSELS=LOG_KML_OPTION_GENERATE_VESSELS
+OPTION_GENERATE_STOPS=
+OPTION_GENERATE_TRACK=
+OPTION_GENERATE_VESSELS=
 FILESPECS=
 
 while [ "${1}" != "" ] ; do
@@ -54,13 +54,13 @@ while [ "${1}" != "" ] ; do
       exit 0
       ;;
     -s)
-      OPTION_GENERATE_STOPS=0
+      OPTION_GENERATE_STOPS=yes
       ;;
     -t)
-      OPTION_GENERATE_TRACK=1
+      OPTION_GENERATE_TRACK=yes
       ;;
     -v)
-      OPTION_GENERATE_VESSELS=1
+      OPTION_GENERATE_VESSELS=yes
       ;;
     *) 
       FILESPEC=${1}
@@ -244,9 +244,9 @@ for FILENAME in ${FILESPECS} ; do
   LOGFILE=$( ${BASENAME} ${FILENAME} )
   echo "  <Folder id='${LOGFILE}'>"
 
-  if [ ${OPTION_GENERATE_STOPS} -eq 1 ] ; then generateStops "${LOGFILE}" ; fi
-  if [ ${OPTION_GENERATE_TRACK} -eq 1 ] ; then generateTrack "${LOGFILE}" ; fi
-  if [ ${OPTION_GENERATE_VESSELS} -eq 1 ] ; then generateVessels "${LOGFILE}" ; fi
+  if [ "${OPTION_GENERATE_STOPS}" ] ; then generateStops "${LOGFILE}" ; fi
+  if [ "${OPTION_GENERATE_TRACK}" ] ; then generateTrack "${LOGFILE}" ; fi
+  if [ "${OPTION_GENERATE_VESSELS}" ] ; then generateVessels "${LOGFILE}" ; fi
 
   echo "  </Folder>"
 done
