@@ -125,29 +125,44 @@ generateTrack() {
   local positioncount=$(${GREP} -c '^' <<< "${positions}")
   local distance=$(${LOGTRIP} ${1})
   local hours=$(${LOGRUNTIME} ${1})
-  echo "    <Folder id='${1}-track'>"
+  local speed=0
+  local placemarkopen=0
   if [ ${positioncount} -gt 1 ] ; then
-    echo "      <Placemark>"
-    echo "        <name>PASSAGE</name>"
-    echo "        <description>"
-    echo "          <![CDATA["
-    echo "            <b><a href='/?m=${day}'>${fullday}</a></b>"
-    echo "            <br>${distance}km (${hours}h)"
-    echo "          ]]>"
-    echo "        </description>"
-    echo "        <styleUrl>#linestyle</styleUrl>"
-    echo "        <LineString>"
-    echo "          <coordinates>" 
-    while read -r position; do
+    echo "    <Folder id='${LOGFILE}-track'>"
+    while read -r position ; do
+      sog=$( echo ${position} | ${JQ} -j '.speedOverGround / 3 | floor' )
+      if [ "${speed}" != "${sog}" ] ; then
+        if [ ${placemarkopen} -ne 0 ] ; then
+          echo "          </coordinates>"
+          echo "        </LineString>"
+          echo "      </Placemark>"
+          placemarkopen=0
+        fi
+        echo "      <Placemark>"
+        echo "        <name>PASSAGE</name>"
+        echo "        <description>"
+        echo "          <![CDATA["
+        echo "            <b><a href='/?m=${day}'>${fullday}</a></b>"
+        echo "            <br>${distance}km (${hours}h)"
+        echo "          ]]>"
+        echo "        </description>"
+        echo "        <styleUrl>#linestyle-${speed}</styleUrl>"
+        echo "        <LineString>"
+        echo "          <coordinates>"
+        placemarkopen=1
+      fi
       lonlat=$(echo ${position} | ${JQ} -j '.longitude,",",.latitude')
       echo "            ${lonlat},0"
     done <<< "${positions}"
-    echo "          </coordinates>"
-    echo "        </LineString>"
-    echo "      </Placemark>"
+    if [ ${placemarkopen} -ne 0 ] ; then
+      echo "          </coordinates>"
+      echo "        </LineString>"
+      echo "      </Placemark>"
+      placemarkopen=0
+    fi
+    echo "    </Folder>"
   fi
-  echo "    </Folder>"
-  return 0
+  exit 0
 }
 
 generateVessels() {
@@ -291,126 +306,3 @@ echo "</Document>"
 echo "</kml>"
 exit 0
 
-generateStops() {
-  local stops=()
-  local marker="#startmarker"
-  local markerlabel="started"
-
-  readarray -t stops < <( ${LOGPOSITIONS} -s ${1} )
-  
-  echo "    <Folder id='${LOGFILE}-track'>"
-  for stop in "${stops[@]}" ; do
-    if [ "${stop}" == "${stops[-1]}" ] ; then
-      marker="#stopmarker"
-      markerlabel="moored"
-    fi
-    local longitude=$(echo ${stop} | ${JQ} -j '.longitude')
-    local latitude=$(echo ${stop} | ${JQ} -j '.latitude')
-    local date=$(echo ${stop} | ${JQ} -j '.date')
-    local time=${date#*T} ; time=${time/_/ }
-    local name="${longitude}, ${latitude}"
-    local reversegeoresult=$(${WGET} -q -O - "${NOMINATUM_QUERY}lat=${latitude}&lon=${longitude}")
-    local location=$(echo ${reversegeoresult} | ${JQ} -j '.address.hamlet')
-    if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.village') ; fi
-    if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.suburb') ; fi
-    if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.municipality') ; fi
-    if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.city') ; fi
-    if [ "${location}" != "null" ] ; then name=$(${RECODE} ..html <<<"${location}") ; fi
-    echo "      <Placemark>"
-    echo "        <name>${time}: ${markerlabel} @ ${name}</name>"
-    echo "        <description>"
-    echo "          <![CDATA["
-    echo "            <a href='/?tag=${name}'>${name}</a>"
-    echo "          ]]>"
-    echo "        </description>"
-    echo "        <styleUrl>${marker}</styleUrl>"
-    echo "        <Point>"
-    echo "          <coordinates>"
-    echo "            ${longitude},${latitude},0"
-    echo "          </coordinates>"
-    echo "        </Point>"
-    echo "      </Placemark>"
-    marker="#haltmarker"
-    markerlabel="stopped"
-  done
-  echo "    </Folder>"
-  exit 0
-}
-
-generateTrack() {
-  local positions=$(${LOGPOSITIONS} ${1})
-  local positioncount=$(${GREP} -c '^' <<< "${positions}")
-  local distance=$(${LOGTRIP} ${1})
-  local hours=$(${LOGRUNTIME} ${1})
-  local speed=0
-  local placemarkopen=0
-  if [ ${positioncount} -gt 1 ] ; then
-    echo "    <Folder id='${LOGFILE}-track'>"
-    while read -r position ; do
-      sog=$( echo ${position} | ${JQ} -j '.speedOverGround | floor' )
-      if [ "${speed}" != "${sog}" ] ; then
-        if [ ${placemarkopen} -ne 0 ] ; then
-          echo "          </coordinates>"
-          echo "        </LineString>"
-          echo "      </Placemark>"
-          placemarkopen=0
-        fi
-        echo "      <Placemark>"
-        echo "        <name>PASSAGE</name>"
-        echo "        <description>"
-        echo "          <![CDATA["
-        echo "            <b><a href='/?m=${day}'>${fullday}</a></b>"
-        echo "            <br>${distance}km (${hours}h)"
-        echo "          ]]>"
-        echo "        </description>"
-        echo "        <styleUrl>#linestyle-${speed}</styleUrl>"
-        echo "        <LineString>"
-        echo "          <coordinates>"
-        placemarkopen=1
-      fi
-      lonlat=$(echo ${position} | ${JQ} -j '.longitude,",",.latitude')
-      echo "            ${lonlat},0"
-    done <<< "${positions}"
-    if [ ${placemarkopen} -ne 0 ] ; then
-      echo "          </coordinates>"
-      echo "        </LineString>"
-      echo "      </Placemark>"
-      placemarkopen=0
-    fi
-    echo "    </Folder>"
-  fi
-  exit 0
-}
-
-generateVessels() {
-  local vessels=()
-  local marker="#vesselmarker"
-
-  readarray -t vessels <<<$( ${GREP} -hi "VESSEL" ${1} )
-
-  echo "    <Folder id='${LOGFILE}-vessels'>"
-  for vessel in "${vessels[@]}" ; do
-    local mmsi=$(echo ${vessel} | ${JQ} -j '.mmsi')
-    local name=$(echo ${vessel} | ${JQ} -j '.name')
-    local heading=$(echo ${vessel} | ${JQ} -j '.heading')
-    local longitude=$(echo ${stop} | ${JQ} -j '.position.longitude')
-    local latitude=$(echo ${stop} | ${JQ} -j '.position.latitude')
-    local label="${name} (${mmsi})"
-    echo "      <Placemark>"
-    echo "        <name>${name} (${mmsi})</name>"
-    echo "        <description>"
-    echo "          <![CDATA["
-    echo "            <a href='/?tag=${name}'>${name}</a>"
-    echo "          ]]>"
-    echo "        </description>"
-    echo "        <styleUrl>${marker}</styleUrl>"
-    echo "        <Point>"
-    echo "          <coordinates>"
-    echo "            ${longitude},${latitude},0"
-    echo "          </coordinates>"
-    echo "        </Point>"
-    echo "      </Placemark>"
-  done
-  echo "    </Folder>"
-  exit 0
-}
