@@ -100,7 +100,6 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
     fi
 
 
-
     if [ "${LABEL:0:1}" == ">" ] ; then
       LABEL=${LABEL:1}
       if [ "${DOIT}" == "1" ] ; then
