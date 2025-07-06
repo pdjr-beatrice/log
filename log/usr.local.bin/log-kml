@@ -146,11 +146,9 @@ generateTrack() {
           placemarkopen=0
         fi
         echo "      <Placemark>"
-        echo "        <name>PASSAGE</name>"
+        echo "        <name>${distance}km (${hours}h)</name>"
         echo "        <description>"
         echo "          <![CDATA["
-        echo "            <b><a href='/?m=${day}'>${fullday}</a></b>"
-        echo "            <br>${distance}km (${hours}h)"
         echo "            <br>${sogmsg}"
         echo "          ]]>"
         echo "        </description>"
