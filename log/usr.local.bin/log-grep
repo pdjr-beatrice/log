@@ -5,7 +5,7 @@
 #   specified regular expression.
 #
 # SYNOPSIS
-#   log-grep [-f] [-l] regex [logfile...]
+#   log-grep [-d] [-f] [-l] regex [logfile...]
 #   log-grep -h
 #
 # DESCRIPTION
@@ -25,6 +25,8 @@
 #
 #   The script supports the following command line options:
 #
+#   -d  output datestamp as well as value
+#
 #   -f  restricts output to just the first selected record.
 #
 #   -h  displays this documentation.
@@ -40,9 +42,13 @@ FILESPECS=
 FILESPEC=
 OPTION_REGEX=
 OPTION_RESTRICTION=
+OPTION_DATESTAMP=
 
 while [ "$1" != "" ] ; do
   case $1 in
+    -d)
+      OPTION_DATESTAMP="yes"
+      ;;
     -f)
       OPTION_RESTRICTION="first"
       ;;
@@ -81,7 +87,7 @@ if [ ${#RECORDS[@]} -gt 0 ] ; then
   if [ "${OPTION_RESTRICTION}" == "last" ] ; then RECORDS=( "${RECORDS[-1]}" ) ; fi
 
   for line in "${RECORDS[@]}" ; do
-    date=${line%% *}
+    if [ "${OPTION_DATESTAMP}" == "yes" ]; then echo -n "${line%% *} " ; fi
     skip=0
     tokens=0
     for token in ${line} ; do

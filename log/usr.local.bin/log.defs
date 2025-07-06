@@ -115,11 +115,16 @@ normalise() {
         retval=0
         ;;
       POSITION) 
-        local lat=$(echo "${2}" | ${JQ} -j '.latitude')
+        local lat=$(echo "${2}" | ${JQ} -j '.position.value.latitude')
         if [ "${lat}" != "0.000000" ] ; then
-          local lon=$(echo "${2}" | ${JQ} -j '.longitude')
+          local lon=$(echo "${2}" | ${JQ} -j '.position.value.longitude')
           if [ "${lon}" != "0.000000" ] ; then
-            echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f }" ${lat} ${lon} )
+            local heading=$(echo "${2}" | ${JQ} -j '.headingTrue.value')
+            heading=$( echo "${heading}*57.2958" | ${BC} -l )
+            local speedOverGround=$(echo "${2}" | ${JQ} -j '.speedOverGround.value')
+            speedOverGround=$( echo "${speedOverGround}*3.6" | ${BC} -l )
+
+            echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"speedOverGround\": %0.1f }" ${lat} ${lon} ${heading} ${speedOverGround} )
             retval=0
           fi
         fi
