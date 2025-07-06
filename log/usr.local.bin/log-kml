@@ -148,6 +148,7 @@ generateTrack() {
         echo "          <![CDATA["
         echo "            <b><a href='/?m=${day}'>${fullday}</a></b>"
         echo "            <br>${distance}km (${hours}h)"
+        echo "            <br>SOG between ${sog} and ${sog}+3 kmph"
         echo "          ]]>"
         echo "        </description>"
         echo "        <styleUrl>#linestyle${speed}</styleUrl>"
