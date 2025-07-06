@@ -153,7 +153,7 @@ generateTrack() {
         echo "        <LineString>"
         echo "          <coordinates>"
         placemarkopen=1
-        speed=sog
+        speed=${sog}
       fi
       lonlat=$(echo ${position} | ${JQ} -j '.longitude,",",.latitude')
       echo "            ${lonlat},0"
