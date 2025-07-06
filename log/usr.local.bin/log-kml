@@ -194,6 +194,42 @@ echo "      <color>7fff0000</color>"
 echo "      <width>4</width>"
 echo "    </LineStyle>"
 echo "  </Style>"
+echo "  <Style id='linestyle-0'>"
+echo "    <LineStyle>"
+echo "      <color>fef00100</color>"
+echo "      <width>4</width>"
+echo "    </LineStyle>"
+echo "  </Style>"
+echo "  <Style id='linestyle-3'>"
+echo "    <LineStyle>"
+echo "      <color>ffce0300</color>"
+echo "      <width>4</width>"
+echo "    </LineStyle>"
+echo "  </Style>"
+echo "  <Style id='linestyle-6'>"
+echo "    <LineStyle>"
+echo "      <color>fd9a0100</color>"
+echo "      <width>4</width>"
+echo "    </LineStyle>"
+echo "  </Style>"
+echo "  <Style id='linestyle-9'>"
+echo "    <LineStyle>"
+echo "      <color>fd610400</color>"
+echo "      <width>4</width>"
+echo "    </LineStyle>"
+echo "  </Style>"
+echo "  <Style id='linestyle-12'>"
+echo "    <LineStyle>"
+echo "      <color>ff2c0500</color>"
+echo "      <width>4</width>"
+echo "    </LineStyle>"
+echo "  </Style>"
+echo "  <Style id='linestyle-15'>"
+echo "    <LineStyle>"
+echo "      <color>f0050500</color>"
+echo "      <width>4</width>"
+echo "    </LineStyle>"
+echo "  </Style>"
 echo "  <Style id='startmarker'>"
 echo "    <IconStyle>"
 echo "      <scale>0.5</scale>"
@@ -306,26 +342,41 @@ generateTrack() {
   local positioncount=$(${GREP} -c '^' <<< "${positions}")
   local distance=$(${LOGTRIP} ${1})
   local hours=$(${LOGRUNTIME} ${1})
+  local speed=0
+  local placemarkopen=0
   if [ ${positioncount} -gt 1 ] ; then
     echo "    <Folder id='${LOGFILE}-track'>"
-    echo "      <Placemark>"
-    echo "        <name>PASSAGE</name>"
-    echo "        <description>"
-    echo "          <![CDATA["
-    echo "            <b><a href='/?m=${day}'>${fullday}</a></b>"
-    echo "            <br>${distance}km (${hours}h)"
-    echo "          ]]>"
-    echo "        </description>"
-    echo "        <styleUrl>#linestyle</styleUrl>"
-    echo "        <LineString>"
-    echo "          <coordinates>" 
-    while read -r position; do
+    while read -r position ; do
+      sog=$( echo ${position} | ${JQ} -j '.speedOverGround | floor' )
+      if [ "${speed}" != "${sog}" ] ; then
+        if [ ${placemarkopen} -ne 0 ] ; then
+          echo "          </coordinates>"
+          echo "        </LineString>"
+          echo "      </Placemark>"
+          placemarkopen=0
+        fi
+        echo "      <Placemark>"
+        echo "        <name>PASSAGE</name>"
+        echo "        <description>"
+        echo "          <![CDATA["
+        echo "            <b><a href='/?m=${day}'>${fullday}</a></b>"
+        echo "            <br>${distance}km (${hours}h)"
+        echo "          ]]>"
+        echo "        </description>"
+        echo "        <styleUrl>#linestyle-${speed}</styleUrl>"
+        echo "        <LineString>"
+        echo "          <coordinates>"
+        placemarkopen=1
+      fi
       lonlat=$(echo ${position} | ${JQ} -j '.longitude,",",.latitude')
       echo "            ${lonlat},0"
     done <<< "${positions}"
-    echo "          </coordinates>"
-    echo "        </LineString>"
-    echo "      </Placemark>"
+    if [ ${placemarkopen} -ne 0 ] ; then
+      echo "          </coordinates>"
+      echo "        </LineString>"
+      echo "      </Placemark>"
+      placemarkopen=0
+    fi
     echo "    </Folder>"
   fi
   exit 0
