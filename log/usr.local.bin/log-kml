@@ -132,7 +132,7 @@ generateTrack() {
     echo "    <Folder id='${LOGFILE}-track'>"
     while read -r position ; do
       local sog=
-      local sogmsg=SOG not available"
+      local sogmsg="SOG not available"
       if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${position} ) == true ]] ; then
         sog=$( echo ${position} | ${JQ} -j '.speedOverGround / 3 | floor | string' )
         sogmsg="SOG between ${sog} and ${sog}+3 kmph"
