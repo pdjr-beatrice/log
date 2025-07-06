@@ -130,7 +130,10 @@ generateTrack() {
   if [ ${positioncount} -gt 1 ] ; then
     echo "    <Folder id='${LOGFILE}-track'>"
     while read -r position ; do
-      sog=$( echo ${position} | ${JQ} -j '.speedOverGround / 3 | floor' )
+      local sog=10
+      if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${position} ) == true ]] ; then
+        sog=$( echo ${position} | ${JQ} -j '.speedOverGround / 3 | floor' )
+      fi
       if [ "${speed}" != "${sog}" ] ; then
         if [ ${placemarkopen} -ne 0 ] ; then
           echo "          </coordinates>"
@@ -150,6 +153,7 @@ generateTrack() {
         echo "        <LineString>"
         echo "          <coordinates>"
         placemarkopen=1
+        speed=sog
       fi
       lonlat=$(echo ${position} | ${JQ} -j '.longitude,",",.latitude')
       echo "            ${lonlat},0"
