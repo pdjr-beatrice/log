@@ -125,14 +125,14 @@ generateTrack() {
   local positioncount=$(${GREP} -c '^' <<< "${positions}")
   local distance=$(${LOGTRIP} ${1})
   local hours=$(${LOGRUNTIME} ${1})
-  local speed=0
+  local speed=" "
   local placemarkopen=0
   if [ ${positioncount} -gt 1 ] ; then
     echo "    <Folder id='${LOGFILE}-track'>"
     while read -r position ; do
-      local sog=9
+      local sog=
       if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${position} ) == true ]] ; then
-        sog=$( echo ${position} | ${JQ} -j '.speedOverGround / 3 | floor' )
+        sog=$( echo ${position} | ${JQ} -j '.speedOverGround / 3 | floor | string' )
       fi
       if [ "${speed}" != "${sog}" ] ; then
         speed=${sog}
@@ -150,11 +150,10 @@ generateTrack() {
         echo "            <br>${distance}km (${hours}h)"
         echo "          ]]>"
         echo "        </description>"
-        echo "        <styleUrl>#linestyle-${speed}</styleUrl>"
+        echo "        <styleUrl>#linestyle${speed}</styleUrl>"
         echo "        <LineString>"
         echo "          <coordinates>"
         placemarkopen=1
-        speed=${sog}
       fi
       lonlat=$(echo ${position} | ${JQ} -j '.longitude,",",.latitude')
       echo "            ${lonlat},0"
@@ -214,37 +213,37 @@ echo "      <color>7fff0000</color>"
 echo "      <width>4</width>"
 echo "    </LineStyle>"
 echo "  </Style>"
-echo "  <Style id='linestyle-0'>"
+echo "  <Style id='linestyle0'>"
 echo "    <LineStyle>"
 echo "      <color>fef00100</color>"
 echo "      <width>4</width>"
 echo "    </LineStyle>"
 echo "  </Style>"
-echo "  <Style id='linestyle-3'>"
+echo "  <Style id='linestyle1'>"
 echo "    <LineStyle>"
 echo "      <color>ffce0300</color>"
 echo "      <width>4</width>"
 echo "    </LineStyle>"
 echo "  </Style>"
-echo "  <Style id='linestyle-6'>"
+echo "  <Style id='linestyle2'>"
 echo "    <LineStyle>"
 echo "      <color>fd9a0100</color>"
 echo "      <width>4</width>"
 echo "    </LineStyle>"
 echo "  </Style>"
-echo "  <Style id='linestyle-9'>"
+echo "  <Style id='linestyle3'>"
 echo "    <LineStyle>"
 echo "      <color>fd610400</color>"
 echo "      <width>4</width>"
 echo "    </LineStyle>"
 echo "  </Style>"
-echo "  <Style id='linestyle-12'>"
+echo "  <Style id='linestyle4'>"
 echo "    <LineStyle>"
 echo "      <color>ff2c0500</color>"
 echo "      <width>4</width>"
 echo "    </LineStyle>"
 echo "  </Style>"
-echo "  <Style id='linestyle-15'>"
+echo "  <Style id='linestyle5'>"
 echo "    <LineStyle>"
 echo "      <color>f0050500</color>"
 echo "      <width>4</width>"
