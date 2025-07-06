@@ -115,8 +115,7 @@ normalise() {
         retval=0
         ;;
       POSITION)
-        # The supplied data value must be either a Signal K 'navigation'
-        # object or a 'position' object.
+        # The supplied data value is a simple 'position' object.
         if [[ $( ${JQ} -j 'has("latitude")' <<< ${2} ) == true ]] ; then
           local lat=$(echo "${2}" | ${JQ} -j '.latitude')
           if [ "${lat}" != "0.000000" ] ; then
@@ -126,6 +125,7 @@ normalise() {
               retval=0
             fi
           fi
+        # Otherwise assume the data value is a 'navigation' object
         else 
           local lat=$(echo "${2}" | ${JQ} -j '.position.value.latitude')
           if [ "${lat}" != "0.000000" ] ; then
