@@ -258,7 +258,7 @@ exit 0
 generateStops() {
   local stops=()
   local marker="#startmarker"
-  local markerlabel="START"
+  local markerlabel="started"
 
   readarray -t stops < <( ${LOGPOSITIONS} -s ${1} )
   
@@ -266,8 +266,7 @@ generateStops() {
   for stop in "${stops[@]}" ; do
     if [ "${stop}" == "${stops[-1]}" ] ; then
       marker="#stopmarker"
-      markerlabel="STOP"
-      if [ ${#stops[@]} -eq 1 ] ; then markerlabel="MOORED"; fi
+      markerlabel="moored"
     fi
     local longitude=$(echo ${stop} | ${JQ} -j '.longitude')
     local latitude=$(echo ${stop} | ${JQ} -j '.latitude')
@@ -282,7 +281,7 @@ generateStops() {
     if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.city') ; fi
     if [ "${location}" != "null" ] ; then name=$(${RECODE} ..html <<<"${location}") ; fi
     echo "      <Placemark>"
-    echo "        <name>${markerlabel} @ ${time}</name>"
+    echo "        <name>${time}: ${markerlabel} @ ${name}</name>"
     echo "        <description>"
     echo "          <![CDATA["
     echo "            <a href='/?tag=${name}'>${name}</a>"
@@ -296,7 +295,7 @@ generateStops() {
     echo "        </Point>"
     echo "      </Placemark>"
     marker="#haltmarker"
-    markerlabel="HALT"
+    markerlabel="stopped"
   done
   echo "    </Folder>"
   exit 0
