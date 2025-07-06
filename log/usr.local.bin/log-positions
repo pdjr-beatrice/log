@@ -128,7 +128,15 @@ for FILENAME in ${FILESPECS} ; do
       position_json=$( sed -e 's/.*POSITION //' <<<${line} )
       lat=$(echo "${position_json}" | ${JQ} -j '.latitude')
       lon=$(echo "${position_json}" | ${JQ} -j '.longitude')
-      echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
+      output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
+      if [[ $( ${JQ} -j 'has("heading")' <<< ${position_json} ) == true ]] ; then
+        heading=$(echo "${position_json}" | ${JQ} -j '.heading')
+        if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${position_json} ) == true ]] ; then
+          speedOverGround=$(echo "${position_json}" | ${JQ} -j '.speedOverGround')
+          output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"speedOverGround\": %0.1f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${speedOverGround} ${date} )
+        fi
+      fi
+      echo "${output}"
     done
   fi
 done    
