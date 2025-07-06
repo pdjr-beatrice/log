@@ -114,15 +114,14 @@ normalise() {
         echo $( printf %.0f $( echo "${2}*100.0" | ${BC} -l ) )
         retval=0
         ;;
-      POSITION) 
+      POSITION)
+        # The supplied data value must be a Signal K 'navigation' object.
         local lat=$(echo "${2}" | ${JQ} -j '.position.value.latitude')
         if [ "${lat}" != "0.000000" ] ; then
           local lon=$(echo "${2}" | ${JQ} -j '.position.value.longitude')
           if [ "${lon}" != "0.000000" ] ; then
-            local heading=$(echo "${2}" | ${JQ} -j '.headingTrue.value')
-            heading=$( echo "${heading}*57.2958" | ${BC} -l )
-            local speedOverGround=$(echo "${2}" | ${JQ} -j '.speedOverGround.value')
-            speedOverGround=$( echo "${speedOverGround}*3.6" | ${BC} -l )
+            local heading=$(echo "${2}" | ${JQ} -j '.headingTrue.value * 57.2958')
+            local speedOverGround=$(echo "${2}" | ${JQ} -j '.speedOverGround.value * 3.6')
 
             echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"speedOverGround\": %0.1f }" ${lat} ${lon} ${heading} ${speedOverGround} )
             retval=0
