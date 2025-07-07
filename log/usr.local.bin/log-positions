@@ -61,21 +61,37 @@
 
 . /usr/local/bin/log.defs
 
-function processPositionLine {
-  date=${1%% *}
-  value=$( sed -e 's/.*POSITION //' <<<${1} )
-  lat=$(echo "${value}" | ${JQ} -j '.latitude')
-  lon=$(echo "${value}" | ${JQ} -j '.longitude')
-  if [ "${2}" != "" ] ; then
-    stopdate=${2%% *}
-  
-  output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
+processPosition() {
+  local date=${1%% *}
+  local value=$( sed -e 's/.*POSITION //' <<<${1} )
+  local lat=$(echo "${value}" | ${JQ} -j '.latitude')
+  local lon=$(echo "${value}" | ${JQ} -j '.longitude')
+
+  local output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
   if [[ $( ${JQ} -j 'has("heading")' <<< ${value} ) == true ]] ; then
     heading=$(echo "${value}" | ${JQ} -j '.heading')
+    output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${date} )
     if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${value} ) == true ]] ; then
       speedOverGround=$(echo "${value}" | ${JQ} -j '.speedOverGround')
       output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"speedOverGround\": %0.1f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${speedOverGround} ${date} )
     fi
+  fi
+  echo "${output}"
+}
+
+processStop() {
+  local date=${1%% *}
+  local value=$( sed -e 's/.*POSITION //' <<<${1} )
+  local lat=$(echo "${value}" | ${JQ} -j '.latitude')
+  local lon=$(echo "${value}" | ${JQ} -j '.longitude')
+
+  local output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
+  if [ "${2}" != "" ] ;  then
+    local stopdate=${2%% *}
+    local tsa=$( ${DATE} -d "${date/_/ }" +%s )
+    local tsb=$( ${DATE} -d "${stopdate/_/ }" +%s )
+    local duration=$( printf ', "duration": %0.0f' $( echo "(${tsb} - ${tsa}) / 60" | ${BC} -l ) )
+    output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\"%s }" ${lat} ${lon} ${date} "${duration}" )
   fi
   echo "${output}"
 }
@@ -128,36 +144,42 @@ for FILENAME in ${FILESPECS} ; do
   case ${POSITION_TYPE} in
     positions)
       readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
-      for line in "${lines[@]}" ; do POSITIONS+=($( processPositionLine ${line} )) done
+      for line in "${lines[@]}" ; do POSITIONS+=("$( processPosition "${line}" )") ; done
       ;;
     stops)
       readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} )
       for line in "${lines[@]}" ; do
         if [[ "${line}" =~ ${POSITION_PATTERN} ]] ; then
-          POSITIONS+=($( processPositionLine "${line}" ))
+          POSITIONS+=("$( processStop "${line}" )")
           break
         fi
       done
 
       posline=
       stopbegin=
+      skipfirst=0
       for line in "${lines[@]}" ; do
         if [[ "${line}" =~ ${POSITION_PATTERN} ]] ; then posline="${line}" ; fi        
-        if [[ "${line}" =~ STATE\ 0 ]] ; then stopbegin="${posline}" ; fi
-        if [[ "${line}" =~ STATE\ 1 ]] ; then
-          if [ "${stopbegin}" != "" ] ; then
-            POSITIONS+=($( processPositionLine "${stopbegin}" "${posline}" ))
-            stopbegin=
+        if [[ "${line}" =~ STATE.0 ]] ; then stopbegin="${posline}" ; fi
+        if [[ "${line}" =~ STATE.1 ]] ; then
+          if [ ${skipfirst} -ne 0 ] ; then
+            if [ "${stopbegin}" != "" ] ; then
+              POSITIONS+=("$( processStop "${stopbegin}" "${line}" )")
+              stopbegin=
+            fi
           fi
+          skipfirst=1
         fi
       done
-      if [ "${stopbegin}" != "" ] ; then POSITIONS+=($( processPositionLine "${stopbegin}" ))
+      if [ ${skipfirst} -eq 1 ] ; then
+        if [ "${stopbegin}" != "" ] ; then POSITIONS+=("$( processStop "${stopbegin}" )") ; fi
+      fi
       ;;
   esac
 
   if [ ${#POSITIONS[@]} -gt 0 ] ; then
     if [ "${SELECTOR}" == "first" ] ; then POSITIONS=( "${POSITIONS[0]}" ) ; fi
     if [ "${SELECTOR}" == "last" ] ; then POSITIONS=( "${POSITIONS[-1]}" ) ; fi
-    printf '%s\n' "${POSITIONS[@]}"
+    for position in "${POSITIONS[@]}" ; do echo ${position} ; done
   fi
 done
