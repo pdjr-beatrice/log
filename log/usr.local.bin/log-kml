@@ -92,6 +92,10 @@ generateStops() {
     local date=$(echo ${stop} | ${JQ} -j '.date')
     local time=${date#*T} ; time=${time/_/ }
     local name="${longitude}, ${latitude}"
+    local duration=0
+    if [[ $( ${JQ} -j 'has("duration")' <<< ${stop} ) == true ]] ; then
+      duration=$( echo ${stop} | ${JQ} -j '.duration' )
+    fi
     local reversegeoresult=$(${WGET} -q -O - "${NOMINATUM_QUERY}lat=${latitude}&lon=${longitude}")
     local location=$(echo ${reversegeoresult} | ${JQ} -j '.address.hamlet')
     if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.village') ; fi
@@ -100,9 +104,11 @@ generateStops() {
     if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.city') ; fi
     if [ "${location}" != "null" ] ; then name=$(${RECODE} ..html <<<"${location}") ; fi
     echo "      <Placemark>"
-    echo "        <name>${time}: ${markerlabel} @ ${name}</name>"
+    echo "        <name>${time}: ${markerlabel}</name>"
     echo "        <description>"
     echo "          <![CDATA["
+    echo "            Location: ${name}<br>"
+    if [ ${duration} -ne 0 ] ; then echo "            Duration: ${duration}" ; fi 
     echo "            <a href='/?tag=${name}'>${name}</a>"
     echo "          ]]>"
     echo "        </description>"
@@ -134,8 +140,8 @@ generateTrack() {
       local sog=
       local sogmsg="SOG not available"
       if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${position} ) == true ]] ; then
-        sog=$( echo ${position} | ${JQ} -j '.speedOverGround / 3 | floor | string' )
-        sogmsg="SOG between ${sog} and ${sog}+3 kmph"
+        sog=$( echo ${position} | ${JQ} -j '.speedOverGround | floor' )
+        sogmsg="SOG ${sog}kmph"
       fi
       if [ "${speed}" != "${sog}" ] ; then
         speed=${sog}
@@ -215,42 +221,22 @@ echo "      <color>7fff0000</color>"
 echo "      <width>4</width>"
 echo "    </LineStyle>"
 echo "  </Style>"
-echo "  <Style id='linestyle0'>"
-echo "    <LineStyle>"
-echo "      <color>fef00100</color>"
-echo "      <width>4</width>"
-echo "    </LineStyle>"
-echo "  </Style>"
-echo "  <Style id='linestyle1'>"
-echo "    <LineStyle>"
-echo "      <color>ffce0300</color>"
-echo "      <width>4</width>"
-echo "    </LineStyle>"
-echo "  </Style>"
-echo "  <Style id='linestyle2'>"
-echo "    <LineStyle>"
-echo "      <color>fd9a0100</color>"
-echo "      <width>4</width>"
-echo "    </LineStyle>"
-echo "  </Style>"
-echo "  <Style id='linestyle3'>"
-echo "    <LineStyle>"
-echo "      <color>fd610400</color>"
-echo "      <width>4</width>"
-echo "    </LineStyle>"
-echo "  </Style>"
-echo "  <Style id='linestyle4'>"
-echo "    <LineStyle>"
-echo "      <color>ff2c0500</color>"
-echo "      <width>4</width>"
-echo "    </LineStyle>"
-echo "  </Style>"
-echo "  <Style id='linestyle5'>"
-echo "    <LineStyle>"
-echo "      <color>f0050500</color>"
-echo "      <width>4</width>"
-echo "    </LineStyle>"
-echo "  </Style>"
+echo "  <Style id='linestyle0'><LineStyle><color>ffff0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle1'><LineStyle><color>ffef0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle2'><LineStyle><color>ffdf0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle3'><LineStyle><color>ffcf0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle4'><LineStyle><color>ffbf0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle5'><LineStyle><color>ffaf0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle6'><LineStyle><color>ff9f0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle7'><LineStyle><color>ff8f0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle8'><LineStyle><color>ff7f0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle9'><LineStyle><color>ff6f0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle10'><LineStyle><color>ff5f0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle11'><LineStyle><color>ff4f0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle12'><LineStyle><color>ff3f0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle13'><LineStyle><color>ff2f0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle14'><LineStyle><color>ff1f0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle15'><LineStyle><color>ff0f0000</color><width>4</width></LineStyle></Style>"
 echo "  <Style id='startmarker'>"
 echo "    <IconStyle>"
 echo "      <scale>0.5</scale>"
