@@ -61,6 +61,25 @@
 
 . /usr/local/bin/log.defs
 
+function processPositionLine {
+  date=${1%% *}
+  value=$( sed -e 's/.*POSITION //' <<<${1} )
+  lat=$(echo "${value}" | ${JQ} -j '.latitude')
+  lon=$(echo "${value}" | ${JQ} -j '.longitude')
+  if [ "${2}" != "" ] ; then
+    stopdate=${2%% *}
+  
+  output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
+  if [[ $( ${JQ} -j 'has("heading")' <<< ${value} ) == true ]] ; then
+    heading=$(echo "${value}" | ${JQ} -j '.heading')
+    if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${value} ) == true ]] ; then
+      speedOverGround=$(echo "${value}" | ${JQ} -j '.speedOverGround')
+      output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"speedOverGround\": %0.1f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${speedOverGround} ${date} )
+    fi
+  fi
+  echo "${output}"
+}
+
 FILESPECS=
 POSITION_TYPE=positions
 SELECTOR=all
@@ -108,35 +127,37 @@ for FILENAME in ${FILESPECS} ; do
   POSITIONS=()
   case ${POSITION_TYPE} in
     positions)
-      readarray -t POSITIONS <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
+      readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
+      for line in "${lines[@]}" ; do POSITIONS+=($( processPositionLine ${line} )) done
       ;;
     stops)
-      readarray -t FIRSTPOSITION <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} | ${GREP} -A1 "${ENGINE_STATE_PATTERN} 1" | ${GREP} -m1 "${POSITION_PATTERN}" )
-      if [ "${FIRSTPOSITION[0]}" == "" ] ; then FIRSTPOSITION=(); fi
-      readarray -t OTHERPOSITIONS <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} | ${GREP} -B1 "${ENGINE_STATE_PATTERN} 0" | ${GREP} "${POSITION_PATTERN}" )
-      if [ ${#FIRSTPOSITION} -gt 0 ] ; then OTHERPOSITIONS=("${OTHERPOSITIONS[@]:1}") ; fi
-      POSITIONS=( "${FIRSTPOSITION[@]}" "${OTHERPOSITIONS[@]}" )
+      readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} )
+      for line in "${lines[@]}" ; do
+        if [[ "${line}" =~ ${POSITION_PATTERN} ]] ; then
+          POSITIONS+=($( processPositionLine "${line}" ))
+          break
+        fi
+      done
+
+      posline=
+      stopbegin=
+      for line in "${lines[@]}" ; do
+        if [[ "${line}" =~ ${POSITION_PATTERN} ]] ; then posline="${line}" ; fi        
+        if [[ "${line}" =~ STATE\ 0 ]] ; then stopbegin="${posline}" ; fi
+        if [[ "${line}" =~ STATE\ 1 ]] ; then
+          if [ "${stopbegin}" != "" ] ; then
+            POSITIONS+=($( processPositionLine "${stopbegin}" "${posline}" ))
+            stopbegin=
+          fi
+        fi
+      done
+      if [ "${stopbegin}" != "" ] ; then POSITIONS+=($( processPositionLine "${stopbegin}" ))
       ;;
   esac
 
   if [ ${#POSITIONS[@]} -gt 0 ] ; then
     if [ "${SELECTOR}" == "first" ] ; then POSITIONS=( "${POSITIONS[0]}" ) ; fi
     if [ "${SELECTOR}" == "last" ] ; then POSITIONS=( "${POSITIONS[-1]}" ) ; fi
-
-    for line in "${POSITIONS[@]}" ; do
-      date=${line%% *}
-      position_json=$( sed -e 's/.*POSITION //' <<<${line} )
-      lat=$(echo "${position_json}" | ${JQ} -j '.latitude')
-      lon=$(echo "${position_json}" | ${JQ} -j '.longitude')
-      output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
-      if [[ $( ${JQ} -j 'has("heading")' <<< ${position_json} ) == true ]] ; then
-        heading=$(echo "${position_json}" | ${JQ} -j '.heading')
-        if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${position_json} ) == true ]] ; then
-          speedOverGround=$(echo "${position_json}" | ${JQ} -j '.speedOverGround')
-          output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"speedOverGround\": %0.1f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${speedOverGround} ${date} )
-        fi
-      fi
-      echo "${output}"
-    done
+    printf '%s\n' "${POSITIONS[@]}"
   fi
-done    
+done
