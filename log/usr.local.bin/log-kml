@@ -127,32 +127,42 @@ generateStops() {
 }
 
 generateTrack() {
-  local positions=$(${LOGPOSITIONS} ${1})
-  local positioncount=$(${GREP} -c '^' <<< "${positions}")
-  local distance=$(${LOGTRIP} ${1})
-  local hours=$(${LOGRUNTIME} ${1})
+  local positions=() ; readarray -t positions < <( ${LOGPOSITIONS} ${1} )
+  local distance=$( ${LOGTRIP} ${1} )
+  local hours=$( ${LOGRUNTIME} ${1} )
 
-  if [ ${positioncount} -gt 1 ] ; then
-    echo "    <Folder id='${LOGFILE}-track'>"
-    echo "      <Placemark>"
-    echo "        <name>${distance}km (${hours}h)</name>"
-    echo "        <description>"
-    echo "          <![CDATA["
-    echo "            <br>${sogmsg}"
-    echo "          ]]>"
-    echo "        </description>"
-    echo "        <styleUrl>#linestyle</styleUrl>"
-    echo "        <LineString>"
-    echo "          <coordinates>"
-    while read -r position ; do
-      lonlat=$(echo ${position} | ${JQ} -j '.longitude,",",.latitude')
-      echo "            ${lonlat},0"
-    done <<< "${positions}"
-    echo "          </coordinates>"
-    echo "        </LineString>"
-    echo "      </Placemark>"
-    echo "    </Folder>"
-  fi
+  if [ ${#positions[@]} -gt 1 ] ; then
+    local a=$( echo ${positions[0]} | ${JQ} -j '.longitude,",",.latitude' )
+    local b=
+    local sog=
+    local sogmsg=
+    for (( i = 1; i < ${#positions[@]} ; i++ )) ; do
+      b=$( echo ${positions[${i}]} | ${JQ} -j '.longitude,",",.latitude' )
+      sog=0
+      sogmsg="SOG not available"
+      if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${positions[${i}]} ) == true ]] ; then
+        sog=$( echo ${positions[${i}]} | ${JQ} -j '.speedOverGround | floor' )
+        sogmsg="SOG ${sog}kph"
+      fi
+      echo "    <Folder id='${LOGFILE}-track'>"
+      echo "      <Placemark>"
+      echo "        <name>${distance}km (${hours}h)</name>"
+      echo "        <description>"
+      echo "          <![CDATA["
+      echo "            <br>${sogmsg}"
+      echo "          ]]>"
+      echo "        </description>"
+      echo "        <styleUrl>#linestyle${sog}</styleUrl>"
+      echo "        <LineString>"
+      echo "          <coordinates>"
+      echo "            ${a},0"
+      echo "            ${b},0"
+      echo "          </coordinates>"
+      echo "        </LineString>"
+      echo "      </Placemark>"
+      echo "    </Folder>"
+      a=b
+    done
   exit 0
 }
 
