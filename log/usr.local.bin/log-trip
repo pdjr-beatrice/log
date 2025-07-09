@@ -42,10 +42,10 @@ done
 
 if [ ! ${LOGFILEARGS} ] ; then LOGFILEARGS=$(${DATE} +%Y%m%d) ; fi
 
-POSITIONS=$( ${LOGPOSITIONS} ${LOGFILEARGS} )
-POSITION_COUNT=$( echo "${POSITIONS}" | ${WC} -l );
-if [ ${POSITION_COUNT} -gt 1 ] ; then
-  echo $( echo "${POSITIONS}" | ${PYTHON} ${LOGTRIPSCRIPT} )
+
+readarray -t POSITIONS < <( ${LOGPOSITIONS} -x ${LOGFILEARGS} )
+if [ ${#POSITIONS[@]} -gt 1 ] ; then
+  echo $( printf '%s\n' "${POSITIONS[@]}" | ${PYTHON} ${LOGTRIPSCRIPT} )
 else
   echo 0
 fi

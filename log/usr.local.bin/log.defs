@@ -32,6 +32,7 @@ XARGS=/usr/bin/xargs
 # Log system file locations ##################################################
 #
 BINDIR=/usr/local/bin/
+LIBDIR=/usr/local/lib/
 LOGDIR=/var/log/beatrice/
 LOGIMAGEDIR=${LOGDIR}images/
 LOGATREST=${BINDIR}log-atrest
@@ -42,7 +43,7 @@ LOGPOSITIONS=${BINDIR}log-positions
 LOGREPORT=${BINDIR}log-report
 LOGRUNTIME=${BINDIR}log-runtime
 LOGTRIP=${BINDIR}log-trip
-LOGTRIPSCRIPT=${BINDIR}/../lib/log-trip.py
+LOGTRIPSCRIPT=${LIBDIR}log-trip.py
 LOGUPDATE=${BINDIR}log-update
 LOGVESSELS=${LOGDIR}vessels.log
 
@@ -122,7 +123,7 @@ normalise() {
             local heading=$(echo "${2}" | ${JQ} -j '.headingTrue.value * 57.2958')
             local speedOverGround=$(echo "${2}" | ${JQ} -j '.speedOverGround.value * 3.6')
 
-            echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"speedOverGround\": %0.1f }" ${lat} ${lon} ${heading} ${speedOverGround} )
+            echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %0.0f, \"speedOverGround\": %0.1f }" ${lat} ${lon} ${heading} ${speedOverGround} )
             retval=0
           fi
         fi
