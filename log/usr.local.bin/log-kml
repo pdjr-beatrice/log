@@ -136,11 +136,11 @@ generateTrack() {
   local hours=$( ${LOGRUNTIME} ${1} )
 
   if [ ${#positions[@]} -gt 1 ] ; then
-    local a=$( echo ${positions[0]} | ${JQ} -j '.longitude,",",.latitude' )
+    local a=$( echo ${positions[1]} | ${JQ} -j '.longitude,",",.latitude' )
     local b=
     local sog=
     local sogmsg=
-    for (( i = 1; i < ${#positions[@]} ; i++ )) ; do
+    for (( i = 2; i < ${#positions[@]} ; i++ )) ; do
       b=$( echo ${positions[${i}]} | ${JQ} -j '.longitude,",",.latitude' )
       sog=0
       sogmsg="SOG not available"
