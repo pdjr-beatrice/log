@@ -80,13 +80,12 @@ generateStops() {
 
   readarray -t stops < <( ${LOGPOSITIONS} -s ${1} )
   
-  echo ""
   echo "    <Folder id='${1}-stops'>"
   for stop in "${stops[@]}" ; do
     local longitude=$(echo ${stop} | ${JQ} -j '.longitude')
     local latitude=$(echo ${stop} | ${JQ} -j '.latitude')
     local date=$(echo ${stop} | ${JQ} -j '.date')
-    local day=${date**T}
+    local day=${date%%T*}
     local time=${date#*T} ; time=${time/_/ }
     local name="${longitude}, ${latitude}"
     local duration=0
@@ -107,7 +106,7 @@ generateStops() {
       if [ ${#stops[@]} -eq 1 ] ; then markerlabel="${day}: MOORED"; fi
     fi
     
-    echo "      <Placemark>"
+    echo -n "      <Placemark>"
     echo -n "<name>${markerlabel}</name>"
     echo -n "<description>"
     echo -n "<![CDATA["
@@ -120,7 +119,7 @@ generateStops() {
     echo -n "<Point>"
     echo -n "<coordinates>${longitude},${latitude},0</coordinates>"
     echo -n "</Point>"
-    echo -n "</Placemark>"
+    echo "</Placemark>"
     marker="#haltmarker"
     markerlabel="${time}: HALT"
   done
@@ -146,9 +145,8 @@ generateTrack() {
         sog=$( echo ${positions[${i}]} | ${JQ} -j '.speedOverGround | floor' )
         sogmsg="SOG ${sog}kph"
       fi
-      echo ""
-      echo -n "    <Folder id='track-${i}'>"
-      echo -n "<Placemark>"
+      echo "    <Folder id='track-${i}'>"
+      echo -n "      <Placemark>"
       echo -n "<name>${distance}km (${hours}h)</name>"
       echo -n "<description>"
       echo -n "<![CDATA["
@@ -157,12 +155,12 @@ generateTrack() {
       echo -n "</description>"
       echo -n "<styleUrl>#linestyle${sog}</styleUrl>"
       echo -n "<LineString><coordinates>${a},0 ${b},0</coordinates></LineString>"
-      echo -n "</Placemark>"
+      echo "</Placemark>"
       echo "    </Folder>"
       a=${b}
     done
   fi
-  exit 0
+  return 0
 }
 
 generateVessels() {
@@ -171,7 +169,6 @@ generateVessels() {
 
   readarray -t vessels < <( ${LOGGREP} "VESSEL" ${1} )
 
-  echo ""
   echo "    <Folder id='${1}-vessels'>"
   for vessel in "${vessels[@]}" ; do
     local mmsi=$(echo ${vessel} | ${JQ} -j '.mmsi')
@@ -194,8 +191,8 @@ generateVessels() {
     echo -n "            ${longitude},${latitude},0"
     echo -n "          </coordinates>"
     echo -n "        </Point>"
-    echo "      </Placemark>"
-fi
+    echo "</Placemark>"
+    fi
   done
   echo "    </Folder>"
   return 0
