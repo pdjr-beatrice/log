@@ -83,14 +83,10 @@ generateStops() {
   echo ""
   echo "    <Folder id='${1}-stops'>"
   for stop in "${stops[@]}" ; do
-    if [ "${stop}" == "${stops[-1]}" ] ; then
-      marker="#stopmarker"
-      markerlabel="STOP"
-      if [ ${#stops[@]} -eq 1 ] ; then markerlabel="MOORED"; fi
-    fi
     local longitude=$(echo ${stop} | ${JQ} -j '.longitude')
     local latitude=$(echo ${stop} | ${JQ} -j '.latitude')
     local date=$(echo ${stop} | ${JQ} -j '.date')
+    local day=${date**T}
     local time=${date#*T} ; time=${time/_/ }
     local name="${longitude}, ${latitude}"
     local duration=0
@@ -104,8 +100,15 @@ generateStops() {
     if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.municipality') ; fi
     if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.city') ; fi
     if [ "${location}" != "null" ] ; then name=$(${RECODE} ..html <<<"${location}") ; fi
+
+    if [ "${stop}" == "${stops[-1]}" ] ; then
+      marker="#stopmarker"
+      markerlabel="${time}: STOP"
+      if [ ${#stops[@]} -eq 1 ] ; then markerlabel="${day}: MOORED"; fi
+    fi
+    
     echo "      <Placemark>"
-    echo -n "<name>${time}: ${markerlabel}</name>"
+    echo -n "<name>${markerlabel}</name>"
     echo -n "<description>"
     echo -n "<![CDATA["
     echo -n "Location: ${name}<br>"
@@ -119,7 +122,7 @@ generateStops() {
     echo -n "</Point>"
     echo -n "</Placemark>"
     marker="#haltmarker"
-    markerlabel="HALT"
+    markerlabel="${time}: HALT"
   done
   echo "    </Folder>"
   return 0
