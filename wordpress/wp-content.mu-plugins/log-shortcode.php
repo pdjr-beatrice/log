@@ -217,7 +217,7 @@ function log_func($atts, $content = null) {
     if ($content = file($path)) {
       $retval =  "<br>" . render_navigation_log($content);
       $retval .= "<br>" . render_equipment_log($content);
-      #$retval .= "<br>" . render_vessel_log(basename($date, '.log'));
+      $retval .= "<br>" . render_vessel_log(basename($date, '.log'));
       $retval .= "<script src='https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js'></script>";
       $retval .= "<script src='https://cdn.jsdelivr.net/npm/chart.js@2.8.0'></script>";
       $retval .= "<script src='/log.js'></script>";
