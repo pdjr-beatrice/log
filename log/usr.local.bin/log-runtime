@@ -65,7 +65,8 @@ for FILENAME in ${FILESPECS} ; do
   STOP=""
   if [ ${#ENTRIES[@]} -gt 0 ] ; then
     for line in "${ENTRIES[@]}" ; do
-      time=${line:0:20}
+      time=${line:0:24}
+      time=${time/_/ }
       state=$( ${SED} -e 's/.*STATE //' <<< ${line} )
       if [ "${state}" == "1" ] ; then
         START=$(${DATE} --utc -d "${time}" '+%s')

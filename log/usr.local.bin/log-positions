@@ -1,37 +1,43 @@
 #!/bin/bash
 #
 # NAME
-#   log-positions - generate a list of position coordinates from one or more
-#   log files.
+#   log-positions - extract position data from one or more log files.
 #
 # SYNOPSIS
-#   log-positions -s -f -l [logfile...]
+#   log-positions [-e token] [-f] [-l] [-p token] [-s] [-x] [logfile...]
 #   log-positions -h
 #
 # DESCRIPTION
+#   Output a newline separated list of JSON encoded position records
+#   from one or more log files. Each record has the format:
 #
-#   Output a list of JSON encoded position records from one or more
-#   log files.
+#   { "latitude": lat, "longitude": lon, "date": "date" }
+#
+#   where lat and lon are decimal degrees and date is a time string.
 #
 #   If logfile is ommitted, then the output will be drawn from the
-#   current (todays) log file.
-#
-#   logfile arguments are processed in the order in which they occur
-#   and can have any of the following formats:
+#   current (todays) log file, otherwise logfile arguments are
+#   processed in the order in which they occur and can have any of
+#   the following formats:
 #
 #   YYYY selects all the log files for the specified year;
 #   YYYYMM selects all the log files for the specified month;
 #   YYYYMMDD selects the log file for the specified day.
 #
 #   With no options, the script outputs records for every position
-#   recorded in the specified logfiles.
+#   recorded in the specified logfiles. Multiple records typically
+#   represent the track of the vessel whilst navigating.
 #
 #   The -s option restricts output to just positions which represent
-#   a stop: this means any position report that immediately preceeds
-#   an engine stop.
-#   An engine stop is identified as log record containing the text
-#   'Main engine STATE 0', but this text can be overriden using the
-#   -e option.
+#   a stop. Stops are computed in the following way:
+#
+#   1. If there is only one position in the log file then it is
+#      returned (on the assumption that the vessel was moored or
+#      otherwise at rest).
+#
+#   2. Otherwise, the position following the first engine start is
+#      returned, followed by all positions that immediately precede
+#      an engine stop.
 #
 #   The -f option restricts output to the first position of those
 #   selected.
@@ -39,24 +45,74 @@
 #   The -l option restricts output to the last position of those
 #   selected.
 #
-#   The script outputs records of the form:
+#   The script selects position and engine state records from log files
+#   using a simple grep filter which selects using token values defined
+#   in the log.defs variables LOG_POSITIONS_POSITION_PATTERN and
+#   LOG_POSITIONS_ENGINE_STATE_PATTERN respectively.
 #
-#   { "latitude": lat, "longitude": lng, "date": "YYYY-MM-DDThh:mm:ssZ" }
+#   The -p option can be used to introduce a token value which will
+#   override LOG_POSITIONS_POSITION_PATTERN.
+#
+#   The -e option can be used to introduce a token value which will
+#   override LOG_POSITIONS_ENGINE_STATE_PATTERN.
+#
+#   The -x option prevents extended position data (i.e. heading and
+#   SOG being included in the output).
 #
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
 
 . /usr/local/bin/log.defs
 
+processPosition() {
+  local date=${1%% *}
+  local value=$( sed -e 's/.*POSITION //' <<<${1} )
+  local lat=$(echo "${value}" | ${JQ} -j '.latitude')
+  local lon=$(echo "${value}" | ${JQ} -j '.longitude')
+
+  local output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
+  if [ "${2}" == "yes" ] ; then
+    if [[ $( ${JQ} -j 'has("heading")' <<< ${value} ) == true ]] ; then
+      heading=$(echo "${value}" | ${JQ} -j '.heading')
+      output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${date} )
+      if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${value} ) == true ]] ; then
+        speedOverGround=$(echo "${value}" | ${JQ} -j '.speedOverGround')
+        output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"speedOverGround\": %0.1f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${speedOverGround} ${date} )
+      fi
+    fi
+  fi
+  echo "${output}"
+}
+
+processStop() {
+  local date=${1%% *}
+  local value=$( sed -e 's/.*POSITION //' <<<${1} )
+  local lat=$(echo "${value}" | ${JQ} -j '.latitude')
+  local lon=$(echo "${value}" | ${JQ} -j '.longitude')
+
+  local output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
+  if [ "${2}" != "" ] ;  then
+    local stopdate=${2%% *}
+    local tsa=$( ${DATE} -d "${date/_/ }" +%s )
+    local tsb=$( ${DATE} -d "${stopdate/_/ }" +%s )
+    local duration=$( printf ', "duration": %0.0f' $( echo "(${tsb} - ${tsa}) / 60" | ${BC} -l ) )
+    output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\"%s }" ${lat} ${lon} ${date} "${duration}" )
+  fi
+  echo "${output}"
+}
+
 FILESPECS=
 POSITION_TYPE=positions
 SELECTOR=all
-ENGINE_STOP="Main engine STATE 0"
+POSITION_PATTERN="${LOG_POSITIONS_POSITION_PATTERN}"
+ENGINE_STATE_PATTERN="${LOG_POSITIONS_ENGINE_STATE_PATTERN}"
+OPTION_EXTENDED=yes
 
 while  [ "${1}" != "" ] ; do
   case ${1} in
     -e)
-      ENGINE_STOP=${1}
+      shift
+      ENGINE_STATE_PATTERN="${1}"
       ;;
     -f)
       SELECTOR=first
@@ -65,11 +121,18 @@ while  [ "${1}" != "" ] ; do
       ${SED} -e '/^$/,$d' ${0}
       exit 0
       ;;
+    -l)
+      SELECTOR=last
+      ;;
+    -p)
+      shift
+      POSITION_PATTERN="${1}"
+      ;;
     -s)
       POSITION_TYPE=stops
       ;;
-    -l)
-      SELECTOR=last
+    -x)
+      OPTION_EXTENDED=no
       ;;
     *)
       FILESPEC=${1}
@@ -80,7 +143,8 @@ while  [ "${1}" != "" ] ; do
   shift
 done
 
-if [ ! "${ENGINE_STOP}" ] ; then echo "log-position: -e option must introduce an engine stop token" ; exit 1; fi
+if [ ! "${ENGINE_STATE_PATTERN}" ] ; then echo "${0}: -e option must introduce an engine stop token" ; exit 1; fi
+if [ ! "${POSITION_PATTERN}" ] ; then echo "${0}: -p option must introduce a position token" ; exit 1; fi
 
 if [ ! "${FILESPECS}" ] ; then FILESPECS="${LOGDIR}$(${DATE} +%Y%m%d)" ; fi
 
@@ -88,23 +152,43 @@ for FILENAME in ${FILESPECS} ; do
   POSITIONS=()
   case ${POSITION_TYPE} in
     positions)
-      readarray -t POSITIONS <<<$( ${GREP} -h 'POSITION' ${FILENAME} )
+      readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
+      for line in "${lines[@]}" ; do POSITIONS+=("$( processPosition "${line}" "${OPTION_EXTENDED}" )") ; done
       ;;
     stops)
-      readarray -t POSITIONS <<<$( ${GREP} -h 'POSITION\|Main engine STATE' ${FILENAME} | ${GREP} -B1 'STATE 0' | ${GREP} 'POSITION' )
+      readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} )
+      for line in "${lines[@]}" ; do
+        if [[ "${line}" =~ ${POSITION_PATTERN} ]] ; then
+          POSITIONS+=("$( processStop "${line}" )")
+          break
+        fi
+      done
+
+      posline=
+      stopbegin=
+      skipfirst=0
+      for line in "${lines[@]}" ; do
+        if [[ "${line}" =~ ${POSITION_PATTERN} ]] ; then posline="${line}" ; fi        
+        if [[ "${line}" =~ STATE.0 ]] ; then stopbegin="${posline}" ; fi
+        if [[ "${line}" =~ STATE.1 ]] ; then
+          if [ ${skipfirst} -ne 0 ] ; then
+            if [ "${stopbegin}" != "" ] ; then
+              POSITIONS+=("$( processStop "${stopbegin}" "${line}" )")
+              stopbegin=
+            fi
+          fi
+          skipfirst=1
+        fi
+      done
+      if [ ${skipfirst} -eq 1 ] ; then
+        if [ "${stopbegin}" != "" ] ; then POSITIONS+=("$( processStop "${stopbegin}" )") ; fi
+      fi
       ;;
   esac
 
   if [ ${#POSITIONS[@]} -gt 0 ] ; then
     if [ "${SELECTOR}" == "first" ] ; then POSITIONS=( "${POSITIONS[0]}" ) ; fi
     if [ "${SELECTOR}" == "last" ] ; then POSITIONS=( "${POSITIONS[-1]}" ) ; fi
-
-    for line in "${POSITIONS[@]}" ; do
-      date=${line%% *}
-      position_json=$( sed -e 's/.*POSITION //' <<<${line} )
-      lat=$(echo "${position_json}" | ${JQ} -j '.latitude')
-      lon=$(echo "${position_json}" | ${JQ} -j '.longitude')
-      echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
-    done
+    for position in "${POSITIONS[@]}" ; do echo "${position}" ; done
   fi
-done    
+done

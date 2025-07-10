@@ -7,7 +7,6 @@ b = None
 d = 0
 
 for line in sys.stdin:
-    line.rstrip()
     if (a is None):
         a = json.loads(line)
     else:

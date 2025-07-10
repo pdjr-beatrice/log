@@ -32,17 +32,18 @@ XARGS=/usr/bin/xargs
 # Log system file locations ##################################################
 #
 BINDIR=/usr/local/bin/
+LIBDIR=/usr/local/lib/
 LOGDIR=/var/log/beatrice/
 LOGIMAGEDIR=${LOGDIR}images/
 LOGATREST=${BINDIR}log-atrest
 LOGEMAIL=${BINDIR}log-email
-LOGGET=${BINDIR}log-get
+LOGGREP=${BINDIR}log-grep
 LOGKML=${BINDIR}log-kml
 LOGPOSITIONS=${BINDIR}log-positions
 LOGREPORT=${BINDIR}log-report
 LOGRUNTIME=${BINDIR}log-runtime
 LOGTRIP=${BINDIR}log-trip
-LOGTRIPSCRIPT=${BINDIR}/../lib/log-trip.py
+LOGTRIPSCRIPT=${LIBDIR}log-trip.py
 LOGUPDATE=${BINDIR}log-update
 LOGVESSELS=${LOGDIR}vessels.log
 
@@ -63,6 +64,17 @@ LOG_UPDATE_SERVER_ADDRESS="http://192.168.1.1:3000"
 LOG_UPDATE_VESSEL_PROXIMITY=1.0
 # HTTPS API query returning current position of host vessel.
 LOG_POSITION_QUERY="${LOG_UPDATE_SERVER_ADDRESS}/signalk/v1/api/vessels/self/navigation/position/value"
+
+# log-positions script defaults ########################################
+#
+LOG_POSITIONS_POSITION_PATTERN="POSITION"
+LOG_POSITIONS_ENGINE_STATE_PATTERN="Main engine STATE"
+
+# log-kml script defaults #############################################
+#
+LOG_KML_OPTION_GENERATE_STOPS=yes
+LOG_KML_OPTION_GENERATE_TRACK=yes
+LOG_KML_OPTION_GENERATE_VESSELS=no
 
 LOG_EMAIL_TEMPORARY_STATIC_MAP="/tmp/map.png"
 LOGEMAIL_DEFAULT_REPORT_TEMPLATE=/usr/local/etc/log-report.template
@@ -85,40 +97,72 @@ minutes2hm() {
     echo "${h}:${m}"
 }
 
-# Normalise a value destined for the log file into the required standard
-# format.
+#######################################################################
+# Normalise a value destined for the log file into a canonical form.
 #
-# ${1} - token defining the type of log entry (e.g. ENGINE, POSITION, etc.)
-# ${2} - raw value to be stored (from Signal K)
+# ${1} - token defining the type of log entry.
+# ${2} - raw value to be stored (probably from Signal K).
+#
+# Returns exit value = 0 on success and the normalised representation
+# of ${2} is written to stdout.
 #
 normalise() {
+  local retval=1
+
   if [ "${1}" ] && [ "${2}" ] ; then
     case ${1} in
       PERCENT)
-        echo $( printf %.0f $( echo "a=${2}*100.0;scale=4;a/1" | ${BC} -l ) )
+        echo $( printf %.0f $( echo "${2}*100.0" | ${BC} -l ) )
+        retval=0
         ;;
-      POSITION)
-        local lat=$(echo "${2}" | ${JQ} -j '.latitude')
-        local lon=$(echo "${2}" | ${JQ} -j '.longitude')
-        echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f }" ${lat} ${lon} )
+      POSITION) 
+        local lat=$(echo "${2}" | ${JQ} -j '.position.value.latitude')
+        if [ "${lat}" != "0.000000" ] ; then
+          local lon=$(echo "${2}" | ${JQ} -j '.position.value.longitude')
+          if [ "${lon}" != "0.000000" ] ; then
+            local heading=$(echo "${2}" | ${JQ} -j '.headingTrue.value * 57.2958')
+            local speedOverGround=$(echo "${2}" | ${JQ} -j '.speedOverGround.value * 3.6')
+
+            echo $( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %0.0f, \"speedOverGround\": %0.1f }" ${lat} ${lon} ${heading} ${speedOverGround} )
+            retval=0
+          fi
+        fi
         ;;
       RATIO)
         echo $( printf %0.4f $( echo "a=${2};if (a>0) a+=0.00005 else if (a<0) a-=0.00005;scale=4;a/1" | ${BC} -l ) )
+        retval=0
         ;;
-      STATE)
-        echo ${2}
+      STATE) 
+        if [ "${2}" == "0" ] ; then
+          echo "0"
+        else
+          echo "1"
+        fi
+        retval=0
         ;;
       SWITCHBANKS)
         echo $( echo "${2}" | ${JQ} -j '.[] | .[] | .state.value' )
+        retval=0
         ;;
       VESSEL)
-        local position=$( wget -q -O - "${LOG_POSITION_QUERY}" | tr -d '\012' )
-        if [ "${position}" != "" ] ; then
-          readarray -t vessels <<<$( echo "${2}" | ${JQ} -j '.[] | select(.name | length > 0) | "{ \"mmsi\": \"" + .mmsi + "\", \"name\": \"" + .name + "\", \"position\": " + (.navigation.position.value|tostring) + " }\n"' )
+        local position=`normalise POSITION "$( wget -q -O - "${LOG_POSITION_QUERY}" | tr -d '\012' )"`
+        if [ $? -eq 0 ] ; then
+          readarray -t vessels <<<$( echo "${2}" | ${JQ} -j '.[] | select(.name | length > 0) | "{ \"mmsi\": \"" + .mmsi + "\", \"name\": \"" + .name + "\", \"position\": " + (.navigation.position.value|tostring) + ", \"heading\": " + (.navigation.headingTrue.value|tostring) + " }\n"' )
           for vessel in "${vessels[@]}" ; do
-            local vesselposition=$(echo "${vessel}" | ${JQ} -j '.position|tostring' )
-            local separation=$( echo -e "${position}\n${vesselposition}" | ${PYTHON} ${LOGTRIPSCRIPT} )
-            if [ $( echo "${separation} < ${LOG_UPDATE_VESSEL_PROXIMITY}" | ${BC} -l ) -eq 1 ] ; then echo ${vessel}; fi
+            local vesselmmsi="$(echo "${vessel}" | ${JQ} -j '.mmsi|tostring')"
+            if [ "${vesselmmsi}" != "" ] ; then
+              local vesselname="$(echo "${vessel}" | ${JQ} -j '.name|tostring')"
+              if [ "${vesselname}" != "" ] ; then
+                local vesselposition=`normalise POSITION "$(echo "${vessel}" | ${JQ} -j '.position|tostring' )"`
+                if [ $? -eq 0 ] ; then
+                  local separation=$( echo -e "${position}\n${vesselposition}" | ${PYTHON} ${LOGTRIPSCRIPT} )
+                  if [ $( echo "${separation} < ${LOG_UPDATE_VESSEL_PROXIMITY}" | ${BC} -l ) -eq 1 ] ; then
+                    echo ${vessel}
+                    retval=0
+                  fi
+                fi
+              fi
+            fi
           done
         fi
         ;;
@@ -127,7 +171,7 @@ normalise() {
         ;;
     esac
   fi
-  echo ""
+  return ${retval}
 }
 
 # Compare two log entries for equivalence, returning 0 if equal, otherwise 1.

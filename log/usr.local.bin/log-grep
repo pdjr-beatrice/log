@@ -1,11 +1,12 @@
 #!/bin/bash
 #
 # NAME
-#   log-get - get the value field from selected log file records.
+#   log-grep - get the value field from log records which match a regex
+#   specified regular expression.
 #
 # SYNOPSIS
-#   log-get [-{f|l}] regex [logfile...]
-#   log-get -h
+#   log-grep [-d] [-f] [-l] regex [logfile...]
+#   log-grep -h
 #
 # DESCRIPTION
 #   If the script is invoked with no arguments, then it will operate as
@@ -20,18 +21,17 @@
 #   YYYYMMDD selects the log file for the specified day.
 #
 #   The selected log files are concatenated and filtered to extract
-#   records matching regex and the contained value fields are returned
-#   as a list.
+#   the value fields of records matching regex.
 #
 #   The script supports the following command line options:
+#
+#   -d  output datestamp as well as value
 #
 #   -f  restricts output to just the first selected record.
 #
 #   -h  displays this documentation.
 #
 #   -l  restricts output to just the last selected record.
-#
-#   -p  convert ratio values to OPTION_percentages
 #
 # AUTHOR
 #   Paul Reeve <preeve@pdjr.eu>
@@ -42,10 +42,13 @@ FILESPECS=
 FILESPEC=
 OPTION_REGEX=
 OPTION_RESTRICTION=
-OPTION_PERCENT=
+OPTION_DATESTAMP=
 
 while [ "$1" != "" ] ; do
   case $1 in
+    -d)
+      OPTION_DATESTAMP="yes"
+      ;;
     -f)
       OPTION_RESTRICTION="first"
       ;;
@@ -55,9 +58,6 @@ while [ "$1" != "" ] ; do
       ;;
     -l)
       OPTION_RESTRICTION="last"
-      ;;
-    -p)
-      OPTION_PERCENT=yes
       ;;
     *)
       if [ "${OPTION_REGEX}" == "" ] ; then
@@ -73,31 +73,31 @@ while [ "$1" != "" ] ; do
 done
 
 if [ ! "${OPTION_REGEX}" ] ; then
-  echo "usage: log-get [-{f|l}] [-p] regex logfilespec..."
-  echo "usage: log-get -h"
+  echo "usage: log-grep [-f] [-l] regex logfilespec..."
+  echo "usage: log-grep -h"
   exit 1
 fi
 
 if [ ! ${FILESPECS} ] ; then FILESPECS="${LOGDIR}$(${DATE} +'%Y%m%d')" ; fi
 
-RECORDS=$(${CAT} ${FILESPECS} | ${GREP} "${OPTION_REGEX}" | ${CUT} -d ' ' -f5-) 
+readarray -t RECORDS < <( ${CAT} ${FILESPECS} | ${GREP} "${OPTION_REGEX}" ) 
 
-if [ "${OPTION_PERCENT}" == "yes" ] ; then
-  PROCESSEDRECORDS=
-  while read -r record ; do
-    PROCESSEDRECORDS="${PROCESSEDRECORDS}"$(echo "scale=0; (${record} * 100) / 1" | ${BC})$'\n'
-  done <<< "${RECORDS}"    
-  RECORDS="${PROCESSEDRECORDS}"
+if [ ${#RECORDS[@]} -gt 0 ] ; then
+  if [ "${OPTION_RESTRICTION}" == "first" ] ; then RECORDS=( "${RECORDS[0]}" ) ; fi
+  if [ "${OPTION_RESTRICTION}" == "last" ] ; then RECORDS=( "${RECORDS[-1]}" ) ; fi
+
+  for line in "${RECORDS[@]}" ; do
+    if [ "${OPTION_DATESTAMP}" == "yes" ]; then echo -n "${line%% *} " ; fi
+    skip=0
+    tokens=0
+    for token in ${line} ; do
+      if [ ${skip} -eq 1 ] ; then
+        if [ ${tokens} -gt 0 ] ; then echo -n " " ; fi
+        echo -n "${token}"
+        let "tokens+=1"
+      fi
+      if [[ ${token} =~ ^[[:upper:]]{4,}+$ ]] ; then skip=1 ; fi
+    done
+    echo ""
+  done
 fi
-
-case $OPTION_RESTRICTION in
-  first)
-    echo -n "${RECORDS}" | ${HEAD} -1
-    ;;
-  last)
-    echo -n "${RECORDS}" | ${TAIL} -1
-    ;;
-  *)
-    echo "${RECORDS}"
-    ;;
-esac
