@@ -104,21 +104,19 @@ generateStops() {
     if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.city') ; fi
     if [ "${location}" != "null" ] ; then name=$(${RECODE} ..html <<<"${location}") ; fi
     echo "      <Placemark>"
-    echo "        <name>${time}: ${markerlabel}</name>"
-    echo "        <description>"
-    echo "          <![CDATA["
-    echo "            Location: ${name}<br>"
-    if [ ${duration} -ne 0 ] ; then echo "            Duration: ${duration}" ; fi 
-    echo "            <a href='/?tag=${name}'>${name}</a>"
-    echo "          ]]>"
-    echo "        </description>"
-    echo "        <styleUrl>${marker}</styleUrl>"
-    echo "        <Point>"
-    echo "          <coordinates>"
-    echo "            ${longitude},${latitude},0"
-    echo "          </coordinates>"
-    echo "        </Point>"
-    echo "      </Placemark>"
+    echo -n "<name>${time}: ${markerlabel}</name>"
+    echo -n "<description>"
+    echo -n "<![CDATA["
+    echo -n "Location: ${name}<br>"
+    if [ ${duration} -ne 0 ] ; then echo -n "Duration: ${duration}" ; fi 
+    echo -n "<a href='/?tag=${name}'>${name}</a>"
+    echo -n "]]>"
+    echo -n "</description>"
+    echo -n "<styleUrl>${marker}</styleUrl>"
+    echo -n "<Point>"
+    echo -n "<coordinates>${longitude},${latitude},0</coordinates>"
+    echo -n "</Point>"
+    echo -n "</Placemark>"
     marker="#haltmarker"
     markerlabel="HALT"
   done
@@ -127,31 +125,37 @@ generateStops() {
 }
 
 generateTrack() {
-  local positions=$(${LOGPOSITIONS} ${1})
-  local positioncount=$(${GREP} -c '^' <<< "${positions}")
-  local distance=$(${LOGTRIP} ${1})
-  local hours=$(${LOGRUNTIME} ${1})
+  local positions=() ; readarray -t positions < <( ${LOGPOSITIONS} ${1} )
+  local distance=$( ${LOGTRIP} ${1} )
+  local hours=$( ${LOGRUNTIME} ${1} )
 
-  if [ ${positioncount} -gt 1 ] ; then
-    echo "    <Folder id='${LOGFILE}-track'>"
-    echo "      <Placemark>"
-    echo "        <name>${distance}km (${hours}h)</name>"
-    echo "        <description>"
-    echo "          <![CDATA["
-    echo "            <br>${sogmsg}"
-    echo "          ]]>"
-    echo "        </description>"
-    echo "        <styleUrl>#linestyle</styleUrl>"
-    echo "        <LineString>"
-    echo "          <coordinates>"
-    while read -r position ; do
-      lonlat=$(echo ${position} | ${JQ} -j '.longitude,",",.latitude')
-      echo "            ${lonlat},0"
-    done <<< "${positions}"
-    echo "          </coordinates>"
-    echo "        </LineString>"
-    echo "      </Placemark>"
-    echo "    </Folder>"
+  if [ ${#positions[@]} -gt 1 ] ; then
+    local a=$( echo ${positions[0]} | ${JQ} -j '.longitude,",",.latitude' )
+    local b=
+    local sog=
+    local sogmsg=
+    for (( i = 1; i < ${#positions[@]} ; i++ )) ; do
+      b=$( echo ${positions[${i}]} | ${JQ} -j '.longitude,",",.latitude' )
+      sog=0
+      sogmsg="SOG not available"
+      if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${positions[${i}]} ) == true ]] ; then
+        sog=$( echo ${positions[${i}]} | ${JQ} -j '.speedOverGround | floor' )
+        sogmsg="SOG ${sog}kph"
+      fi
+      echo -n "    <Folder id='track-${i}'>"
+      echo -n "<Placemark>"
+      echo -n "<name>${distance}km (${hours}h)</name>"
+      echo -n "<description>"
+      echo -n "<![CDATA["
+      echo -n "<br>${sogmsg}"
+      echo -n "]]>"
+      echo -n "</description>"
+      echo -n "<styleUrl>#linestyle${sog}</styleUrl>"
+      echo -n "<LineString><coordinates>${a},0 ${b},0</coordinates></LineString>"
+      echo -n "</Placemark>"
+      echo "    </Folder>"
+      a=${b}
+    done
   fi
   exit 0
 }
@@ -196,26 +200,26 @@ echo "<kml xmlns='http://www.opengis.net/kml/2.2'>"
 echo "<Document>"
 echo "  <Style id='linestyle'>"
 echo "    <LineStyle>"
-echo "      <color>7fff0000</color>"
+echo "      <color>ff00ffff</color>"
 echo "      <width>4</width>"
 echo "    </LineStyle>"
 echo "  </Style>"
-echo "  <Style id='linestyle0'><LineStyle><color>ffff0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle1'><LineStyle><color>ffef0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle2'><LineStyle><color>ffdf0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle3'><LineStyle><color>ffcf0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle4'><LineStyle><color>ffbf0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle5'><LineStyle><color>ffaf0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle6'><LineStyle><color>ff9f0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle7'><LineStyle><color>ff8f0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle8'><LineStyle><color>ff7f0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle9'><LineStyle><color>ff6f0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle10'><LineStyle><color>ff5f0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle11'><LineStyle><color>ff4f0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle12'><LineStyle><color>ff3f0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle13'><LineStyle><color>ff2f0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle14'><LineStyle><color>ff1f0000</color><width>4</width></LineStyle></Style>"
-echo "  <Style id='linestyle15'><LineStyle><color>ff0f0000</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle0'><LineStyle><color>ff00ffff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle1'><LineStyle><color>ff00efff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle2'><LineStyle><color>ff00dfff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle3'><LineStyle><color>ff00cfff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle4'><LineStyle><color>ff00bfff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle5'><LineStyle><color>ff00afff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle6'><LineStyle><color>ff009fff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle7'><LineStyle><color>ff008fff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle8'><LineStyle><color>ff007fff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle9'><LineStyle><color>ff006fff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle10'><LineStyle><color>ff005fff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle11'><LineStyle><color>ff004fff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle12'><LineStyle><color>ff003fff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle13'><LineStyle><color>ff002fff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle14'><LineStyle><color>ff001fff</color><width>4</width></LineStyle></Style>"
+echo "  <Style id='linestyle15'><LineStyle><color>ff000fff</color><width>4</width></LineStyle></Style>"
 echo "  <Style id='startmarker'>"
 echo "    <IconStyle>"
 echo "      <scale>0.5</scale>"
