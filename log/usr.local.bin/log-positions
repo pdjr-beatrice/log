@@ -154,6 +154,7 @@ for FILENAME in ${FILESPECS} ; do
     positions)
       readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
       for line in "${lines[@]}" ; do POSITIONS+=("$( processPosition "${line}" "${OPTION_EXTENDED}" )") ; done
+      if [ ${#POSITIONS[@]} > 1 ] ; then POSITIONS=( "${POSITIONS[@]:1}" ) ; fi
       ;;
     stops)
       readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} )
