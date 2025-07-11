@@ -101,6 +101,20 @@ processStop() {
   echo "${output}"
 }
 
+function getFirstPosline {
+  local -n lines=${1}
+  local posline=
+  for (( i = ${2} ; i < ${#lines[@]} ; i++ )) ; do
+    if [[ "${lines[${i}]}" =~ POSITION ]] ; then posline="${lines[${i}]}" ; fi
+    if [ ${3} -eq 0 ] ; then
+      if [ ${posline} ] ; then break ; fi
+    else
+      if [[ "${lines{${i}}" =~ STATE.1 ]] ; then break ; fi
+    fi
+  done
+  echo "${posline}"
+}
+
 FILESPECS=
 POSITION_TYPE=positions
 SELECTOR=all
@@ -158,32 +172,25 @@ for FILENAME in ${FILESPECS} ; do
       ;;
     stops)
       readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} )
-      for line in "${lines[@]}" ; do
-        if [[ "${line}" =~ ${POSITION_PATTERN} ]] ; then
-          POSITIONS+=("$( processStop "${line}" )")
-          break
-        fi
-      done
-
-      posline=
-      stopbegin=
-      skipfirst=0
-      for line in "${lines[@]}" ; do
-        if [[ "${line}" =~ ${POSITION_PATTERN} ]] ; then posline="${line}" ; fi        
-        if [[ "${line}" =~ STATE.0 ]] ; then stopbegin="${posline}" ; fi
-        if [[ "${line}" =~ STATE.1 ]] ; then
-          if [ ${skipfirst} -ne 0 ] ; then
-            if [ "${stopbegin}" != "" ] ; then
-              POSITIONS+=("$( processStop "${stopbegin}" "${line}" )")
-              stopbegin=
+      poscount=$( grep -c "${POSITION_PATTERN}" <<< "${lines[@]}" )
+      if [ ${poscount} -eq 1 ] ; then
+        for line in "${lines[@]}" ; do
+          if [[ "${line}" =~ ${POSITION_PATTERN} ]] ; then
+            POSITIONS+=("$( processStop "${line}" )")
+            break
+          fi
+        done
+      else
+        for (( i = 0 ; i < ${#lines[@]} ; i++ )) ; do
+          if [[ "${line}" =~ STATE.1 ]] ; then
+            if [ ${#POSITIONS[@]} -eq 0 ] ; then
+              POSITIONS+=( "$( processStop $(getNextPosline lines ${i} 0) )" )
             fi
           fi
-          skipfirst=1
-        fi
-      done
-      if [ ${skipfirst} -eq 1 ] ; then
-        if [ "${stopbegin}" != "" ] ; then POSITIONS+=("$( processStop "${stopbegin}" )") ; fi
-      fi
+          if [[ "${line}" =~ STATE.0 ]] ;
+            then POSITIONS+=("$( processStop $(getNextPosline lines ${i} 0) ($getNextPosline lines ${1} 1) )")
+          fi
+        done
       ;;
   esac
 
