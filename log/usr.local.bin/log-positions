@@ -101,17 +101,18 @@ processStop() {
   echo "${output}"
 }
 
-function getFirstPosline {
-  local -n lines=${1}
+function getNextPosline {
+  local -n myarray=${1}
   local posline=
-  for (( i = ${2} ; i < ${#lines[@]} ; i++ )) ; do
-    if [[ "${lines[${i}]}" =~ POSITION ]] ; then posline="${lines[${i}]}" ; fi
-    if [ ${3} -eq 0 ] ; then
-      if [ ${posline} ] ; then break ; fi
+  for (( i = ${2} ; i < ${#myarray[@]} ; i++ )) ; do
+    if [[ "${myarray[${i}]}" =~ POSITION ]] ; then posline="${myarray[${i}]}" ; fi
+    if [ ${2} -eq 0 ] ; then
+      if [ "${posline}" != "" ] ; then break ; fi
     else
-      if [[ "${lines{${i}}" =~ STATE.1 ]] ; then break ; fi
+      if [[ "${myarray[${i}]" =~ STATE.1 ]] ; then break ; fi
     fi
   done
+  echo "Returning: ${posline}" >&2
   echo "${posline}"
 }
 
@@ -167,13 +168,14 @@ for FILENAME in ${FILESPECS} ; do
   case ${POSITION_TYPE} in
     positions)
       readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
-      for line in "${lines[@]}" ; do POSITIONS+=("$( processPosition "${line}" "${OPTION_EXTENDED}" )") ; done
+      for line in "${lines[@]}" ; do echo ">>$line" ; POSITIONS+=("$( processPosition "${line}" "${OPTION_EXTENDED}" )") ; done
       if [ ${#POSITIONS[@]} -gt 1 ] ; then POSITIONS=( "${POSITIONS[@]:1}" ) ; fi
       ;;
     stops)
       readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} )
-      poscount=$( grep -c "${POSITION_PATTERN}" <<< "${lines[@]}" )
+      poscount=$( grep -c "${POSITION_PATTERN}" ${FILENAME} )
       if [ ${poscount} -eq 1 ] ; then
+        echo "${poscount} Detected just one line"
         for line in "${lines[@]}" ; do
           if [[ "${line}" =~ ${POSITION_PATTERN} ]] ; then
             POSITIONS+=("$( processStop "${line}" )")
@@ -182,15 +184,16 @@ for FILENAME in ${FILESPECS} ; do
         done
       else
         for (( i = 0 ; i < ${#lines[@]} ; i++ )) ; do
-          if [[ "${line}" =~ STATE.1 ]] ; then
+          if [[ "${lines[${i}]}" =~ STATE.1 ]] ; then
             if [ ${#POSITIONS[@]} -eq 0 ] ; then
-              POSITIONS+=( "$( processStop $(getNextPosline lines ${i} 0) )" )
+              POSITIONS+=( "$( processStop "$( getNextPosline lines ${i} 0 )" )" )
             fi
           fi
-          if [[ "${line}" =~ STATE.0 ]] ;
-            then POSITIONS+=("$( processStop $(getNextPosline lines ${i} 0) ($getNextPosline lines ${1} 1) )")
+          if [[ "${line}" =~ STATE.0 ]] ; then
+            POSITIONS+=("$( processStop "$( getNextPosline lines ${i} 0 )" "($ getNextPosline lines ${1} 1 )" )" )
           fi
         done
+      fi
       ;;
   esac
 
