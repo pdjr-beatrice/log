@@ -99,7 +99,6 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
       VALUE=$PATHORDEFAULT
     fi
 
-
     if [ "${LABEL:0:1}" == ">" ] ; then
       LABEL=${LABEL:1}
       if [ "${DOIT}" == "1" ] ; then
@@ -144,7 +143,7 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
           fi
         fi
 
-        # echo "$NEWLABEL $LASTLOGVALUE $SIGNALK_ITEM $ITEM_IS_UNIQUE"
+        #echo "$NEWLABEL $LASTLOGVALUE $SIGNALK_ITEM $ITEM_IS_UNIQUE" >&2
  
         # If there isn't a prior value, then just save this new one...
         if [[ "${LASTLOGVALUE}" == "" ]] ; then

@@ -202,7 +202,7 @@ for FILENAME in ${FILESPECS} ; do
   case ${POSITION_TYPE} in
     positions)
       readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
-      for line in "${lines[@]}" ; do echo ">>$line" ; POSITIONS+=("$( processPosition "${line}" "${OPTION_EXTENDED}" )") ; done
+      for line in "${lines[@]}" ; do POSITIONS+=("$( processPosition "${line}" "${OPTION_EXTENDED}" )") ; done
       if [ ${#POSITIONS[@]} -gt 1 ] ; then POSITIONS=( "${POSITIONS[@]:1}" ) ; fi
       ;;
     stops)
@@ -218,7 +218,7 @@ for FILENAME in ${FILESPECS} ; do
           fi
         done
       else
-        readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} )
+        readarray -t lines <<<$( ${SED} -e '0,/^$/d' ${FILENAME} | ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" )
 
         # Get position immediately after first engine start
         retval=$( getStartPosition )
@@ -253,6 +253,6 @@ for FILENAME in ${FILESPECS} ; do
   if [ ${#POSITIONS[@]} -gt 0 ] ; then
     if [ "${SELECTOR}" == "first" ] ; then POSITIONS=( "${POSITIONS[0]}" ) ; fi
     if [ "${SELECTOR}" == "last" ] ; then POSITIONS=( "${POSITIONS[-1]}" ) ; fi
-    for position in "${POSITIONS[@]}" ; do echo "${position}" ; done
+    for position in "${POSITIONS[@]}" ; do if [ "${position}" != "" ] ; then echo "${position}" ; fi ; done
   fi
 done

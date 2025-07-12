@@ -75,8 +75,8 @@ if [ ! "${FILESPECS}" ] ; then FILESPECS=$(${DATE} +"%Y%m%d") ; fi
 
 generateStops() {
   local stops=()
-  local marker="#startmarker"
-  local markerlabel="START"
+  local marker=
+  local markerlabel=
 
   readarray -t stops < <( ${LOGPOSITIONS} -s ${1} )
   
@@ -100,10 +100,20 @@ generateStops() {
     if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.city') ; fi
     if [ "${location}" != "null" ] ; then name=$(${RECODE} ..html <<<"${location}") ; fi
 
-    if [ "${stop}" == "${stops[-1]}" ] ; then
-      marker="#stopmarker"
-      markerlabel="${time}: STOP"
-      if [ ${#stops[@]} -eq 1 ] ; then markerlabel="${day}: MOORED"; fi
+    if [ ${#stops[@]} -eq 1 ] ; then
+      marker="#mooredmarker"
+      markerlabel="${day}: MOORED";
+    else
+      marker="#haltmarker"
+      markerlabel="${time}: HALT"
+      if [ "${stop}" == "${stops[0]}" ] ; then
+        marker="#startmarker"
+        markerlabel="${time}: START"
+      fi
+      if [ "${stop}" == "${stops[-1]}" ] ; then
+        marker="#stopmarker"
+        markerlabel="${time}: STOP"
+      fi
     fi
     
     echo "      <Placemark>"
@@ -114,7 +124,7 @@ generateStops() {
     if [ ${duration} -ne 0 ] ; then
     echo "            Duration: ${duration}"
     fi 
-    echo            "]]>"
+    echo "          ]]>"
     echo "        </description>"
     echo "        <styleUrl>${marker}</styleUrl>"
     echo "        <Point>"
@@ -123,8 +133,6 @@ generateStops() {
     echo "          </coordinates>"
     echo "        </Point>"
     echo "      </Placemark>"
-    marker="#haltmarker"
-    markerlabel="${time}: HALT"
   done
   echo "    </Folder>"
   return 0
@@ -230,7 +238,7 @@ echo ""
 echo "  <Style id='startmarker'><IconStyle><scale>0.5</scale><Icon><href>/beatrice/icons/marker-15.svg</href></Icon><hotSpot x='0.5' y='0' xunits='fraction' yunits='fraction'/></IconStyle></Style>"
 echo "  <Style id='stopmarker'><IconStyle><scale>0.5</scale><Icon><href>/beatrice/icons/marker-15.svg</href></Icon><hotSpot x='0.5' y='0' xunits='fraction' yunits='fraction'/></IconStyle></Style>"
 echo "  <Style id='haltmarker'><IconStyle><scale>0.5</scale><Icon><href>/beatrice/icons/marker-stroked-11.svg</href></Icon><hotSpot x='0.5' y='0' xunits='fraction' yunits='fraction'/></IconStyle></Style>"
-echo "  <Style id='mooredmarker'><IconStyle><scale>0.5</scale><Icon><href>/beatrice/icons/harbor-15.svg</href></Icon><hotSpot x='0.5' y='0' xunits='fraction' yunits='fraction'/></IconStyle></Style>"
+echo "  <Style id='mooredmarker'><IconStyle><scale>0.5</scale><Icon><href>/beatrice/icons/marker-15.svg</href></Icon><hotSpot x='0.5' y='0' xunits='fraction' yunits='fraction'/></IconStyle></Style>"
 echo "  <Style id='vesselmarker'><IconStyle><scale>0.5</scale><Icon><href>/beatrice/icons/circle-stroked-11.svg</href></Icon><hotSpot x='0.5' y='0.5' xunits='fraction' yunits='fraction'/></IconStyle></Style>"
 echo ""
 
