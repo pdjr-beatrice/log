@@ -101,19 +101,51 @@ processStop() {
   echo "${output}"
 }
 
-function getNextPosline {
-  local -n myarray=${1}
+function getStartPosition {
+  local retval=0
+  local line=
   local posline=
-  for (( i = ${2} ; i < ${#myarray[@]} ; i++ )) ; do
-    if [[ "${myarray[${i}]}" =~ POSITION ]] ; then posline="${myarray[${i}]}" ; fi
-    if [ ${2} -eq 0 ] ; then
-      if [ "${posline}" != "" ] ; then break ; fi
-    else
-      if [[ "${myarray[${i}]" =~ STATE.1 ]] ; then break ; fi
-    fi
+  for (( i = 0 ; i < ${#lines[@]} ; i++ )) ; do
+    line="${lines[${i}]}"
+    if [[ "${line}" =~ POSITION ]] ; then posline="${line}" ; retval=$((i+1)) ; break ; fi
   done
-  echo "Returning: ${posline}" >&2
-  echo "${posline}"
+  echo "${retval}=${posline}"
+  return 0
+}
+
+function getStopPosition {
+  local index=0
+  local line=
+  local posline=
+  for (( i = ${#lines[@]}-1 ; i-- ; i >= 0 )) ; do
+    line="${lines[${i}]}"
+    if [[ "${line}" =~ POSITION ]] ; then posline="${line}" ; retval=${i} ; break ; fi
+  done
+  echo "${retval}=${posline}"
+  return 0
+}
+
+function getHaltPosition {
+  local retval=0
+  local line=
+  local posline=
+  local start=
+  local stop=
+  local ready=0
+  for (( i = 0 ; i < ${#lines[@]} ; i++ )) ; do
+    line="${lines[${i}]}"
+    if [[ "${line}" =~ POSITION ]] ; then
+      posline="${line}"
+      if [ ${ready} -eq 1 ] ; then
+        start="${posline}"
+        retval=${i}
+      fi
+    fi
+    if [[ "${line}" =~ STATE.0 ]]; then stop="$posline" ; fi
+    if [[ "${line}" =~ STATE.1 ]]; then ready=1 ; fi
+  done
+  echo "${retval}=${stop}=${start}"
+  return 0
 }
 
 FILESPECS=
@@ -165,6 +197,7 @@ if [ ! "${FILESPECS}" ] ; then FILESPECS="${LOGDIR}$(${DATE} +%Y%m%d)" ; fi
 
 for FILENAME in ${FILESPECS} ; do
   POSITIONS=()
+  LAST_POSITION=
   case ${POSITION_TYPE} in
     positions)
       readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
@@ -172,10 +205,11 @@ for FILENAME in ${FILESPECS} ; do
       if [ ${#POSITIONS[@]} -gt 1 ] ; then POSITIONS=( "${POSITIONS[@]:1}" ) ; fi
       ;;
     stops)
-      readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} )
+      startPosition=
+      stopPosition=
       poscount=$( grep -c "${POSITION_PATTERN}" ${FILENAME} )
       if [ ${poscount} -eq 1 ] ; then
-        echo "${poscount} Detected just one line"
+        readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
         for line in "${lines[@]}" ; do
           if [[ "${line}" =~ ${POSITION_PATTERN} ]] ; then
             POSITIONS+=("$( processStop "${line}" )")
@@ -183,19 +217,35 @@ for FILENAME in ${FILESPECS} ; do
           fi
         done
       else
-        for (( i = 0 ; i < ${#lines[@]} ; i++ )) ; do
-          if [[ "${lines[${i}]}" =~ STATE.1 ]] ; then
-            if [ ${#POSITIONS[@]} -eq 0 ] ; then
-              POSITIONS+=( "$( processStop "$( getNextPosline lines ${i} 0 )" )" )
-            fi
-          fi
-          if [[ "${line}" =~ STATE.0 ]] ; then
-            POSITIONS+=("$( processStop "$( getNextPosline lines ${i} 0 )" "($ getNextPosline lines ${1} 1 )" )" )
+        readarray -t lines <<<$( ${SED} -e '0,/^$/d' ${FILENAME} | ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" )
+
+        # Get position immediately after first engine start
+        retval=$( getStartPosition )
+        IFS="=" read index line <<<"${retval}"
+        lines=( "${lines[@]:${index}}" )
+        POSITIONS+=( "$( processStop "${line}" )" )
+
+        # Get position immediately before last engine stop
+        retval=$( getStopPosition )
+        IFS="=" read index line <<<"${retval}"
+        lines=( "${lines[@]:0:${index}}" )
+        LAST_POSITION="$( processStop "${line}" )"
+
+        # Get intermediate halt positions
+        index=1
+        while [ ${index} -ne 0 ] ; do
+          retval=$( getHaltPosition )
+          IFS="=" read index stop start <<<"${retval}"
+          if [ ${index} -ne 0 ] ; then
+            lines=( "${lines[@]:${index}}" )
+            POSITIONS+=( "$( processStop "${stop}" "${start} )" )
           fi
         done
       fi
       ;;
   esac
+
+  POSITIONS+=( "${LAST_POSITION}" )
 
   if [ ${#POSITIONS[@]} -gt 0 ] ; then
     if [ "${SELECTOR}" == "first" ] ; then POSITIONS=( "${POSITIONS[0]}" ) ; fi
