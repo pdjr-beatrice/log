@@ -139,6 +139,7 @@ function getHaltPosition {
       if [ ${ready} -eq 1 ] ; then
         start="${posline}"
         retval=${i}
+        break
       fi
     fi
     if [[ "${line}" =~ STATE.0 ]]; then stop="$posline" ; fi
@@ -217,7 +218,7 @@ for FILENAME in ${FILESPECS} ; do
           fi
         done
       else
-        readarray -t lines <<<$( ${SED} -e '0,/^$/d' ${FILENAME} | ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" )
+        readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}\|${ENGINE_STATE_PATTERN}" ${FILENAME} )
 
         # Get position immediately after first engine start
         retval=$( getStartPosition )
@@ -234,11 +235,14 @@ for FILENAME in ${FILESPECS} ; do
         # Get intermediate halt positions
         index=1
         while [ ${index} -ne 0 ] ; do
+          echo "Getting halt" >&2
           retval=$( getHaltPosition )
           IFS="=" read index stop start <<<"${retval}"
           if [ ${index} -ne 0 ] ; then
+            if [ "${stop}" != "" ] && [ "${start}" != "" ] ; then
+              POSITIONS+=( "$( processStop "${stop}" "${start}" )" )
+            fi
             lines=( "${lines[@]:${index}}" )
-            POSITIONS+=( "$( processStop "${stop}" "${start} )" )
           fi
         done
       fi
