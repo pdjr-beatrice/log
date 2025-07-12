@@ -64,6 +64,11 @@
 
 . /usr/local/bin/log.defs
 
+# Converts a POSITION record from the log file into a JSON position
+# object.
+# ${1} is the position record
+# ${2} is optional; if 'yes' then an attempt is made to generate an
+# extended position object. 
 processPosition() {
   local date=${1%% *}
   local value=$( sed -e 's/.*POSITION //' <<<${1} )
