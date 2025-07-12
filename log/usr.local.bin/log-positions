@@ -213,7 +213,7 @@ for FILENAME in ${FILESPECS} ; do
         readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
         for line in "${lines[@]}" ; do
           if [[ "${line}" =~ ${POSITION_PATTERN} ]] ; then
-            POSITIONS+=("$( processStop "${line}" )")
+            POSITIONS+=( "$( processStop "${line}" )" )
             break
           fi
         done
@@ -235,7 +235,6 @@ for FILENAME in ${FILESPECS} ; do
         # Get intermediate halt positions
         index=1
         while [ ${index} -ne 0 ] ; do
-          echo "Getting halt" >&2
           retval=$( getHaltPosition )
           IFS="=" read index stop start <<<"${retval}"
           if [ ${index} -ne 0 ] ; then
