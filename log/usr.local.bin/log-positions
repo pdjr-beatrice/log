@@ -64,70 +64,98 @@
 
 . /usr/local/bin/log.defs
 
+# Usage: processPosition position_record [yes]
+#
 # Converts a POSITION record from the log file into a JSON position
-# object.
-# ${1} is the position record
-# ${2} is optional; if 'yes' then an attempt is made to generate an
-# extended position object. 
+# object (with latitude, longitude and date properties) or, if 'yes'
+# is present, an extended position object with additional heading and
+# speedOverGround properties.
 processPosition() {
-  local date=${1%% *}
-  local value=$( sed -e 's/.*POSITION //' <<<${1} )
-  local lat=$(echo "${value}" | ${JQ} -j '.latitude')
-  local lon=$(echo "${value}" | ${JQ} -j '.longitude')
+  local output=
+  local retval=1
 
-  local output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
-  if [ "${2}" == "yes" ] ; then
-    if [[ $( ${JQ} -j 'has("heading")' <<< ${value} ) == true ]] ; then
-      heading=$(echo "${value}" | ${JQ} -j '.heading')
-      output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${date} )
-      if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${value} ) == true ]] ; then
-        speedOverGround=$(echo "${value}" | ${JQ} -j '.speedOverGround')
-        output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"speedOverGround\": %0.1f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${speedOverGround} ${date} )
+  if [[ "${1}" =~ ${POSITION_PATTERN} ]] ; then
+    local date=${1%% *}
+    local value=$( sed -e 's/.*POSITION //' <<<${1} )
+    local lat=$(echo "${value}" | ${JQ} -j '.latitude')
+    local lon=$(echo "${value}" | ${JQ} -j '.longitude')
+    output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
+    retval=0
+    if [ "${2}" == "yes" ] ; then
+      if [[ $( ${JQ} -j 'has("heading")' <<< ${value} ) == true ]] ; then
+        heading=$(echo "${value}" | ${JQ} -j '.heading')
+        output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${date} )
+        if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${value} ) == true ]] ; then
+          speedOverGround=$(echo "${value}" | ${JQ} -j '.speedOverGround')
+          output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"speedOverGround\": %0.1f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${speedOverGround} ${date} )
+        fi
       fi
     fi
   fi
   echo "${output}"
+  return ${retval}
 }
 
+# Usage: processStop log_record1 [log_record2]
+#
+# Converts a POSITION record log_record1 into a JSON position object
+# with latitude, longitude and date properties). If log_record2 is
+# supplied then an additional duration property specifies the number
+# of minutes between log_record1 and log_record2.
 processStop() {
-  local date=${1%% *}
-  local value=$( sed -e 's/.*POSITION //' <<<${1} )
-  local lat=$(echo "${value}" | ${JQ} -j '.latitude')
-  local lon=$(echo "${value}" | ${JQ} -j '.longitude')
+  local output=
+  local retval=1
 
-  local output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
-  if [ "${2}" != "" ] ;  then
-    local stopdate=${2%% *}
-    local tsa=$( ${DATE} -d "${date/_/ }" +%s )
-    local tsb=$( ${DATE} -d "${stopdate/_/ }" +%s )
-    local duration=$( printf ', "duration": %0.0f' $( echo "(${tsb} - ${tsa}) / 60" | ${BC} -l ) )
-    output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\"%s }" ${lat} ${lon} ${date} "${duration}" )
+  if [[ "${1}" =~ ${POSITION_PATTERN} ]] ; then
+    local date=${1%% *}
+    local value=$( sed -e 's/.*POSITION //' <<<${1} )
+    local lat=$(echo "${value}" | ${JQ} -j '.latitude')
+    local lon=$(echo "${value}" | ${JQ} -j '.longitude')
+    output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
+    retval=0
+    if [[ "${2}" =~ ${POSITION_PATTERN} ]] ;  then
+      local stopdate=${2%% *}
+      local tsa=$( ${DATE} -d "${date/_/ }" +%s )
+      local tsb=$( ${DATE} -d "${stopdate/_/ }" +%s )
+      local duration=$( printf ', "duration": %0.0f' $( echo "(${tsb} - ${tsa}) / 60" | ${BC} -l ) )
+      output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\"%s }" ${lat} ${lon} ${date} "${duration}" )
+    fi
   fi
   echo "${output}"
+  return ${retval}
 }
 
+# Usage: getStartPosition array_of_log_file_lines
+#
+# Returns a string of the form "index=record" containing the line
+# number (index) and text of the first position record in the supplied
+# array of log file lines.
 function getStartPosition {
-  local retval=0
-  local line=
-  local posline=
+  local output=
+  local retval=1
   for (( i = 0 ; i < ${#lines[@]} ; i++ )) ; do
-    line="${lines[${i}]}"
-    if [[ "${line}" =~ POSITION ]] ; then posline="${line}" ; retval=$((i+1)) ; break ; fi
+    if [[ "${lines[${i}]}" =~ POSITION ]] ; then
+      output="$((i+1))=${lines[${i}]}"
+      retval=0
+      break
+    fi
   done
-  echo "${retval}=${posline}"
-  return 0
+  echo "${output}"
+  return ${retval}
 }
 
 function getStopPosition {
-  local index=0
-  local line=
-  local posline=
+  local output=
+  local retval=1
   for (( i = ${#lines[@]}-1 ; i-- ; i >= 0 )) ; do
-    line="${lines[${i}]}"
-    if [[ "${line}" =~ POSITION ]] ; then posline="${line}" ; retval=${i} ; break ; fi
+    if [[ "${lines[${i}]}" =~ POSITION ]] ; then
+      output="${i}=${lines[${i}]}"
+      retval=0
+      break
+    fi
   done
-  echo "${retval}=${posline}"
-  return 0
+  echo "${output}"
+  return ${retval}
 }
 
 function getHaltPosition {
