@@ -85,8 +85,24 @@ if [ "${LOGNAME}" == "" ] ; then
     echo -e "usage: log-email [-k] [-o] [-r recipient] logname\n"
     exit 1
 else
-  if ! [[ "${LOGNAME}" =~ [0-9][0-9][0-9][0-9]([0-9][0-9])?([0-9][0-9])? ]] ; then echo "log-email: bad logname" ; exit 2 ; fi
-  if [ ! -f "${LOGDIR}${LOGNAME}" ] ; then echo "log-email: log \"${LOGNAME}\" does not exist" ; exit 2 ; fi
+  if [[ "${LOGNAME}" =~ [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] ]] ; then
+    if [ ! -f "${LOGDIR}${LOGNAME}" ] ; then
+      echo "log-email: log \"${LOGNAME}\" does not exist" ; exit 2
+    fi
+  else
+    if [[ "${LOGNAME}" =~ [0-9][0-9][0-9][0-9][0-9][0-9] ]] ; then
+      echo ""
+    else
+      if [[ "${LOGNAME}" =~ [0-9][0-9][0-9][0-9] ]] ; then
+        for month in 01 02 03 04 05 06 07 08 09 10 11 12 ; do
+          echo "Executing ${LOGEMAIL} ${LOGNAME}${month}"
+          ${LOGEMAIL} ${LOGNAME}${month}
+        done
+      else
+        echo "log-email: bad logname" ; exit 2 
+      fi
+    fi
+  fi
 fi
 
 
