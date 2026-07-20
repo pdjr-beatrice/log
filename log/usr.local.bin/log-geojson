@@ -1,0 +1,219 @@
+#!/bin/bash
+#
+# NAME
+#   log-geojson - generate a geojson rendering of one or more log files.
+#
+# SYNOPSIS
+#   log-kml [-a] [logfile...]
+#   log-kml -h
+#
+# DESCRIPTION
+#   If the script is invoked with no arguments, then it will operate as
+#   if it had been called with a single logfile argument set to the
+#   position YYYYMMDD that represents the current day.
+#
+#   Otherwise, each logfile argument is a log file specifier of the
+#   form:
+#
+#   YYYY     - selects all the log files for the specified year;
+#   YYYYMM   - selects all the log files for the specified month;
+#   YYYYMMDD - elects the log file for the specified day.
+#
+#   log-kml(1) concatenates all the selected log files and renders them
+#   as a KML document suitable for overlaying on a map. The substantive
+#   KML content of the output file is:
+#
+#   1. A Folder containing a Placemark for each of the stops returned
+#      by executing log-positions(1) against the collated data
+#
+#   2. A Placemark entity defining a line string which depicts the
+#      track of the vessel as defined by the points returned by
+#      executing log-positions(1) against the collated data.
+#
+#   The script supports the following command line options:
+#
+#   -a  passed to log-positions(1) to influence the granularity of stop
+#       rendering.
+#
+#   -h  displays this documentation.
+#
+# AUTHOR
+#   Paul Reeve <preeve@pdjr.eu>
+
+. /usr/local/bin/log.defs
+
+OPTION_GENERATE_STOPS=
+OPTION_GENERATE_TRACK=
+OPTION_GENERATE_VESSELS=
+FILESPECS=
+
+while [ "${1}" != "" ] ; do
+  case ${1} in
+    -h)
+      ${GREP} '^#' ${0}
+      exit 0
+      ;;
+    -s)
+      OPTION_GENERATE_STOPS=yes
+      ;;
+    -t)
+      OPTION_GENERATE_TRACK=yes
+      ;;
+    -v)
+      OPTION_GENERATE_VESSELS=yes
+      ;;
+    *) 
+      FILESPEC=${1}
+      while [ ${#FILESPEC} -lt 8 ] ; do FILESPEC=${FILESPEC}'?' ; done
+      FILESPECS="${FILESPECS} ${LOGDIR}${FILESPEC}"
+      ;;
+  esac
+  shift
+done
+
+if [ ! "${FILESPECS}" ] ; then FILESPECS=$(${DATE} +"%Y%m%d") ; fi
+
+generateStops() {
+  local stops=()
+  local marker=
+  local markerlabel=
+
+  readarray -t stops < <( ${LOGPOSITIONS} -s ${1} )
+  
+  echo "      {"
+  echo "        \"type\": \"FeatureCollection\","
+  echo "        \"features\": ["
+
+  for stop in "${stops[@]}" ; do
+    local longitude=$(echo ${stop} | ${JQ} -j '.longitude')
+    local latitude=$(echo ${stop} | ${JQ} -j '.latitude')
+    local date=$(echo ${stop} | ${JQ} -j '.date')
+    local day=${date%%T*}
+    local time=${date#*T} ; time=${time/_/ }
+    local name="${longitude}, ${latitude}"
+    local duration=0
+    if [[ $( ${JQ} -j 'has("duration")' <<< ${stop} ) == true ]] ; then
+      duration=$( echo ${stop} | ${JQ} -j '.duration' )
+    fi
+    local reversegeoresult=$(${WGET} -q -O - "${NOMINATUM_QUERY}lat=${latitude}&lon=${longitude}")
+    local location=$(echo ${reversegeoresult} | ${JQ} -j '.address.hamlet')
+    if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.village') ; fi
+    if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.suburb') ; fi
+    if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.municipality') ; fi
+    if [ "${location}" == "null" ] ; then location=$(echo ${reversegeoresult} | ${JQ} -j '.address.city') ; fi
+    if [ "${location}" != "null" ] ; then name=$(${RECODE} ..html <<<"${location}") ; fi
+
+    if [ ${#stops[@]} -eq 1 ] ; then
+      marker="#mooredmarker"
+      markerlabel="${day}: MOORED";
+    else
+      marker="#haltmarker"
+      markerlabel="${time}: HALT"
+      if [ "${stop}" == "${stops[0]}" ] ; then
+        marker="#startmarker"
+        markerlabel="${time}: START"
+      fi
+      if [ "${stop}" == "${stops[-1]}" ] ; then
+        marker="#stopmarker"
+        markerlabel="${time}: STOP"
+      fi
+    fi
+
+    echo "          {"
+    echo "            \"type\": \"Feature\","
+    echo "            \"geometry\": {"
+    echo "              \"type\": \"Point\","
+    echo "              \"coordinates\": [${longitude},${latitude}]"
+    echo "            },"
+    echo "            \"properties\": {"
+    echo "              \"name\": \"${name})\","
+    echo "              \"duration\": \"${duration})\","
+    echo "              \"type\": \"${markerlabel}\""
+    echo "            }"
+    echo "          },"
+  done
+
+  echo "        ]"
+  echo "      },"
+  return 0
+}
+
+generateTrack() {
+  local positions=() ; readarray -t positions < <( ${LOGPOSITIONS} ${1} )
+  local distance=$( ${LOGTRIP} ${1} )
+  local hours=$( ${LOGRUNTIME} ${1} )
+
+  echo "      {"
+  echo "        \"type\": \"Feature\,"
+  echo "        \"geometry\: {"
+  echo "          \"type\": \"LineString\","
+  echo "          \"coordinates\": ["
+
+  if [ ${#positions[@]} -gt 0 ] ; then
+    for (( i = 0; i < ${#positions[@]} ; i++ )) ; do
+      $position = $( echo ${positions[${i}]} | ${JQ} -j '.longitude,",",.latitude' )
+      echo "            [${position}],"
+    done
+  fi
+
+  echo "          ]"
+  echo "        },"
+  echo "        \"properties\": {"
+  echo "          \"distance\": \"${distance}\","
+  echo "          \"hours\": \"${hours}\""
+  echo "        }"
+  echo "      },"
+  return 0
+}
+
+generateVessels() {
+  local vessels=()
+  readarray -t vessels < <( ${LOGGREP} "VESSEL" ${1} )
+
+  echo "      {"
+  echo "        \"type\": \"FeatureCollection\,"
+  echo "        \"features\: ["
+  for vessel in "${vessels[@]}" ; do
+    local mmsi=$(echo ${vessel} | ${JQ} -j '.mmsi')
+    local name=$(echo ${vessel} | ${JQ} -j '.name')
+    local heading=$(echo ${vessel} | ${JQ} -j '.heading')
+    local longitude=$(echo ${vessel} | ${JQ} -j '.position.longitude')
+    local latitude=$(echo ${vessel} | ${JQ} -j '.position.latitude')
+    if [ "${latitude}" != "null" ] ; then
+      echo "          {"
+      echo "            \"type\": \"Feature\","
+      echo "            \"geometry\": {"
+      echo "              \"type\": \"Point\","
+      echo "              \"coordinates\": [${longitude},${latitude}]"
+      echo "            },"
+      echo "            \"properties\": {"
+      echo "              \"name\": \"${name})\","
+      echo "              \"mmsi\": \"${mmsi})\""
+      echo "            }"
+      echo "          },"
+    fi
+  done
+  echo "        ]"
+  echo "      },"
+  return 0
+}
+
+echo "{"
+
+for FILENAME in ${FILESPECS} ; do
+  LOGFILE=$( ${BASENAME} ${FILENAME} )
+  echo "  {"
+  echo "    \"type\": \"FeatureCollection\""
+  echo "    \"features\": ["
+
+  if [ "${OPTION_GENERATE_STOPS}" ] ; then generateStops "${LOGFILE}" ; fi
+  if [ "${OPTION_GENERATE_TRACK}" ] ; then generateTrack "${LOGFILE}" ; fi
+  if [ "${OPTION_GENERATE_VESSELS}" ] ; then generateVessels "${LOGFILE}" ; fi
+
+  echo "    ]"
+  echo "  }"
+done
+
+echo "}"
+exit 0
+
