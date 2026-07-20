@@ -94,10 +94,7 @@ else
       echo ""
     else
       if [[ "${LOGNAME}" =~ [0-9][0-9][0-9][0-9] ]] ; then
-        for month in 01 02 03 04 05 06 07 08 09 10 11 12 ; do
-          echo "Executing ${LOGEMAIL} ${LOGNAME}${month}"
-          ${LOGEMAIL} ${LOGNAME}${month}
-        done
+        echo ""
       else
         echo "log-email: bad logname" ; exit 2 
       fi
@@ -121,7 +118,6 @@ WP_TAG=""
 case ${#LOGNAME} in
     4)
         WP_TAG="year,${LOGNAME}"
-        WP_EMAIL_BODY_ANNEX="[yafig category='log' tag='month+${LOGNAME}' columns=4]"
         WP_TITLE_DATE=$( ${DATE} -d "${LOGNAME}0101" "+%Y - " ) 
         WP_PUBDATE=$( ${DATE} -d "${LOGNAME}1231 +1 day" '+%Y%m%d' )
         ;;

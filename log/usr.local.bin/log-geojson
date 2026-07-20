@@ -46,6 +46,7 @@ OPTION_GENERATE_STOPS=
 OPTION_GENERATE_TRACK=
 OPTION_GENERATE_VESSELS=
 FILESPECS=
+HAVE_OUTPUT=
 
 while [ "${1}" != "" ] ; do
   case ${1} in
@@ -80,10 +81,6 @@ generateStops() {
 
   readarray -t stops < <( ${LOGPOSITIONS} -s ${1} )
   
-  echo "      {"
-  echo "        \"type\": \"FeatureCollection\","
-  echo "        \"features\": ["
-
   for stop in "${stops[@]}" ; do
     local longitude=$(echo ${stop} | ${JQ} -j '.longitude')
     local latitude=$(echo ${stop} | ${JQ} -j '.latitude')
@@ -119,22 +116,22 @@ generateStops() {
       fi
     fi
 
-    echo "          {"
-    echo "            \"type\": \"Feature\","
-    echo "            \"geometry\": {"
-    echo "              \"type\": \"Point\","
-    echo "              \"coordinates\": [${longitude},${latitude}]"
-    echo "            },"
-    echo "            \"properties\": {"
-    echo "              \"name\": \"${name})\","
-    echo "              \"duration\": \"${duration})\","
-    echo "              \"type\": \"${markerlabel}\""
-    echo "            }"
-    echo "          },"
-  done
+    if [ "${HAVE_OUTPUT}" ] ; then echo "," ; else echo "" ; fi
+    echo "   {"
+    echo "     \"type\": \"Feature\","
+    echo "     \"geometry\": {"
+    echo "       \"type\": \"Point\","
+    echo "       \"coordinates\": [${longitude},${latitude}]"
+    echo "     },"
+    echo "     \"properties\": {"
+    echo "       \"name\": \"${name}\","
+    echo "       \"duration\": \"${duration}\","
+    echo "       \"type\": \"stop\""
+    echo "     }"
+    echo -n "   }"
+    HAVE_OUTPUT=yes
 
-  echo "        ]"
-  echo "      },"
+  done
   return 0
 }
 
@@ -143,26 +140,30 @@ generateTrack() {
   local distance=$( ${LOGTRIP} ${1} )
   local hours=$( ${LOGRUNTIME} ${1} )
 
-  echo "      {"
-  echo "        \"type\": \"Feature\,"
-  echo "        \"geometry\: {"
-  echo "          \"type\": \"LineString\","
-  echo "          \"coordinates\": ["
+  if [ "${HAVE_OUTPUT}" ] ; then echo "," ; else echo "" ; fi
+  echo "    {"
+  echo "      \"type\": \"Feature\","
+  echo "      \"geometry\": {"
+  echo "        \"type\": \"LineString\","
+  echo "        \"coordinates\": ["
 
   if [ ${#positions[@]} -gt 0 ] ; then
     for (( i = 0; i < ${#positions[@]} ; i++ )) ; do
-      $position = $( echo ${positions[${i}]} | ${JQ} -j '.longitude,",",.latitude' )
-      echo "            [${position}],"
+      local position=$( echo ${positions[${i}]} | ${JQ} -j '.longitude,",",.latitude' )
+      echo -n "          [${position}]"
+      if [[ ${i} -ne $((${#positions[@]} - 1)) ]] ; then echo "," ; else echo "" ; fi 
     done
   fi
 
-  echo "          ]"
-  echo "        },"
-  echo "        \"properties\": {"
-  echo "          \"distance\": \"${distance}\","
-  echo "          \"hours\": \"${hours}\""
-  echo "        }"
+  echo "        ]"
   echo "      },"
+  echo "      \"properties\": {"
+  echo "        \"type\": \"track\","
+  echo "        \"distance\": ${distance},"
+  echo "        \"hours\": \"${hours}\""
+  echo "      }"
+  echo -n "    }"
+  HAVE_OUTPUT=yes
   return 0
 }
 
@@ -170,50 +171,48 @@ generateVessels() {
   local vessels=()
   readarray -t vessels < <( ${LOGGREP} "VESSEL" ${1} )
 
-  echo "      {"
-  echo "        \"type\": \"FeatureCollection\,"
-  echo "        \"features\: ["
-  for vessel in "${vessels[@]}" ; do
+  for (( i = 0; i < ${#vessels[@]} ; i++ )) ; do
+    local vessel=${vessels[${i}]}
     local mmsi=$(echo ${vessel} | ${JQ} -j '.mmsi')
     local name=$(echo ${vessel} | ${JQ} -j '.name')
     local heading=$(echo ${vessel} | ${JQ} -j '.heading')
     local longitude=$(echo ${vessel} | ${JQ} -j '.position.longitude')
     local latitude=$(echo ${vessel} | ${JQ} -j '.position.latitude')
     if [ "${latitude}" != "null" ] ; then
-      echo "          {"
-      echo "            \"type\": \"Feature\","
-      echo "            \"geometry\": {"
-      echo "              \"type\": \"Point\","
-      echo "              \"coordinates\": [${longitude},${latitude}]"
-      echo "            },"
-      echo "            \"properties\": {"
-      echo "              \"name\": \"${name})\","
-      echo "              \"mmsi\": \"${mmsi})\""
-      echo "            }"
-      echo "          },"
+      if [ "${HAVE_OUTPUT}" ] ; then echo "," ; else echo "" ; fi
+      echo "    {"
+      echo "      \"type\": \"Feature\","
+      echo "      \"geometry\": {"
+      echo "        \"type\": \"Point\","
+      echo "        \"coordinates\": [${longitude},${latitude}]"
+      echo "      },"
+      echo "      \"properties\": {"
+      echo "        \"type\": \"vessel\","
+      echo "        \"name\": \"${name}\","
+      echo "        \"mmsi\": \"${mmsi}\""
+      echo "      }"
+      echo -n "    }"
+      HAVE_OUTPUT=yes
     fi
   done
-  echo "        ]"
-  echo "      },"
   return 0
 }
 
 echo "{"
+echo " \"type\": \"FeatureCollection\","
+echo -n " \"features\": ["
 
 for FILENAME in ${FILESPECS} ; do
   LOGFILE=$( ${BASENAME} ${FILENAME} )
-  echo "  {"
-  echo "    \"type\": \"FeatureCollection\""
-  echo "    \"features\": ["
 
   if [ "${OPTION_GENERATE_STOPS}" ] ; then generateStops "${LOGFILE}" ; fi
   if [ "${OPTION_GENERATE_TRACK}" ] ; then generateTrack "${LOGFILE}" ; fi
   if [ "${OPTION_GENERATE_VESSELS}" ] ; then generateVessels "${LOGFILE}" ; fi
 
-  echo "    ]"
-  echo "  }"
 done
-
+if [ "${HAVE_OUTPUT}" ] ; then echo "" ; fi
+echo "  ]"
 echo "}"
 exit 0
+
 

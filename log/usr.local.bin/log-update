@@ -99,6 +99,7 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
       VALUE=$PATHORDEFAULT
     fi
 
+    #echo "${VALUE}" >&2
     if [ "${LABEL:0:1}" == ">" ] ; then
       LABEL=${LABEL:1}
       if [ "${DOIT}" == "1" ] ; then
@@ -114,6 +115,7 @@ for PARAGRAPH_NAME in ${PARAGRAPH_NAMES^^} ; do
         DOIT=0
       fi
     fi
+    #echo "${VALUE}" >&2
 
     ITEM_IS_UNIQUE=
     if [ "${LABEL:0:1}" == "!" ] ; then
