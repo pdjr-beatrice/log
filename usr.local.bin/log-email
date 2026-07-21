@@ -197,6 +197,11 @@ if [ "${OPTION_MAKE_KML}" == "yes" ] ; then
   KML_ATTACHMENT_FILENAME="/tmp/${LOGNAME}.kml"
   ${LOGKML} -s -t ${LOGNAME} > "${KML_ATTACHMENT_FILENAME}"
   KML_ATTACHMENT_CLAUSE="--file-attach ${KML_ATTACHMENT_FILENAME}"
+  if [[ ${LOGNAME} =~ [0-9]{4} ]] || [[ ${LOGNAME} =~ [0-9]{6} ]] ; then
+    GEOJSON_ATTACHMENT_FILENAME="/tmp/${LOGNAME}.geojson"
+    ${LOGGEOJSON} -s -t ${LOGNAME} > "${GEOJSON_ATTACHMENT_FILENAME}"
+    GEOJSON_ATTACHMENT_CLAUSE="--file-attach ${GEOJSON_ATTACHMENT_FILENAME}"
+  fi
 fi
 
 # Generate log file attachment
@@ -206,4 +211,4 @@ if [ ${#LOGNAME} -eq 8 ] ; then
   LOG_ATTACHMENT_CLAUSE="--file-attach ${LOG_ATTACHMENT_FILENAME}"
 fi
 
-sudo -u wordpress ${MIMECONSTRUCT} ${EMAIL_SEND} --to "${EMAIL_RECIPIENT}" --subject "${EMAIL_SUBJECT}" --string "${EMAIL_BODY}" ${KML_ATTACHMENT_CLAUSE} ${LOG_ATTACHMENT_CLAUSE}
+sudo -u wordpress ${MIMECONSTRUCT} ${EMAIL_SEND} --to "${EMAIL_RECIPIENT}" --subject "${EMAIL_SUBJECT}" --string "${EMAIL_BODY}" ${KML_ATTACHMENT_CLAUSE} ${LOG_ATTACHMENT_CLAUSE} ${GEOJSON_ATTACHMENT_CLAUSE}

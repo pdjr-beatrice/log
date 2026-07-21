@@ -39,6 +39,7 @@ LOGATREST=${BINDIR}log-atrest
 LOGEMAIL=${BINDIR}log-email
 LOGGREP=${BINDIR}log-grep
 LOGKML=${BINDIR}log-kml
+LOGGEOJSON=${BINDIR}log-geojson
 LOGPOSITIONS=${BINDIR}log-positions
 LOGREPORT=${BINDIR}log-report
 LOGRUNTIME=${BINDIR}log-runtime
