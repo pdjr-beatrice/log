@@ -86,6 +86,7 @@ processPosition() {
 
 processStop() {
   local date=${1%% *}
+  date=${date/ CEST/_CEST}
   local value=$( sed -e 's/.*POSITION //' <<<${1} )
   local lat=$(echo "${value}" | ${JQ} -j '.latitude')
   local lon=$(echo "${value}" | ${JQ} -j '.longitude')
@@ -93,6 +94,7 @@ processStop() {
   local output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
   if [ "${2}" != "" ] ;  then
     local stopdate=${2%% *}
+    stopdate=${stopdate/ CEST/_CEST}
     local tsa=$( ${DATE} -d "${date/_/ }" +%s )
     local tsb=$( ${DATE} -d "${stopdate/_/ }" +%s )
     local duration=$( printf ', "duration": %0.0f' $( echo "(${tsb} - ${tsa}) / 60" | ${BC} -l ) )
