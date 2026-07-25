@@ -181,6 +181,9 @@ while  [ "${1}" != "" ] ; do
     -s)
       POSITION_TYPE=stops
       ;;
+    -u)
+      SELECTOR=unique
+      ;;
     -x)
       OPTION_EXTENDED=no
       ;;
@@ -255,6 +258,12 @@ for FILENAME in ${FILESPECS} ; do
   if [ ${#POSITIONS[@]} -gt 0 ] ; then
     if [ "${SELECTOR}" == "first" ] ; then POSITIONS=( "${POSITIONS[0]}" ) ; fi
     if [ "${SELECTOR}" == "last" ] ; then POSITIONS=( "${POSITIONS[-1]}" ) ; fi
-    for position in "${POSITIONS[@]}" ; do if [ "${position}" != "" ] ; then echo "${position}" ; fi ; done
+    prevposition=
+    for position in "${POSITIONS[@]}" ; do
+      if [ "${position}" != "" ] && [ "${position}" != "${prevposition}" ]; then
+        echo "${position}"
+      fi 
+      prevposition=${position}
+    done
   fi
 done
