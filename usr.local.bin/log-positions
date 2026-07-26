@@ -217,6 +217,8 @@ for FILENAME in ${FILESPECS} ; do
         if [ "${lat}" != "${prevlat}" ] || [ "${lon}" != "${prevlon}" ] ; then
           POSITIONS+="${position}"
         fi
+        prevlat=${lat}
+        prevlon=${lon}
       done
       if [ ${#POSITIONS[@]} -gt 1 ] ; then POSITIONS=( "${POSITIONS[@]:1}" ) ; fi
       echo "POSITIONS LENGTH = ${#POSITION[@]}"
