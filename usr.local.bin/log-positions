@@ -91,14 +91,14 @@ processStop() {
   local lat=$(echo "${value}" | ${JQ} -j '.latitude')
   local lon=$(echo "${value}" | ${JQ} -j '.longitude')
 
-  local output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
+  local output=$( printf "{ \"latitude\": %0.5f, \"longitude\": %0.5f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
   if [ "${2}" != "" ] ;  then
     local stopdate=${2%% *}
     stopdate=${stopdate/ CEST/_CEST}
     local tsa=$( ${DATE} -d "${date/_/ }" +%s )
     local tsb=$( ${DATE} -d "${stopdate/_/ }" +%s )
     local duration=$( printf ', "duration": %0.0f' $( echo "(${tsb} - ${tsa}) / 60" | ${BC} -l ) )
-    output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\"%s }" ${lat} ${lon} ${date} "${duration}" )
+    output=$( printf "{ \"latitude\": %0.5f, \"longitude\": %0.5f, \"date\": \"%s\"%s }" ${lat} ${lon} ${date} "${duration}" )
   fi
   echo "${output}"
 }
@@ -215,7 +215,7 @@ for FILENAME in ${FILESPECS} ; do
         lat=$( ${JQ} -j '.latitude' )
         lon=$( ${JQ} -j '.longitude' )
         if [ "${lat}" != "${prevlat}" ] || [ "${lon}" != "${prevlon}" ] ; then
-          POSITIONS+="${position}"
+          POSITIONS+=(${position})
         fi
         prevlat=${lat}
         prevlon=${lon}
