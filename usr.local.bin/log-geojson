@@ -148,17 +148,11 @@ generateTrack() {
   echo "        \"coordinates\": ["
 
   if [ ${#positions[@]} -gt 1 ] ; then
-    local llat=
-    local llon=
     for (( i = 0; i < ${#positions[@]} ; i++ )) ; do
-      local longitude=$( printf "%.4f" $( echo ${positions[${i}]} | ${JQ} -j '.longitude' ));
-      local latitude=$( printf "%.4f" $( echo ${positions[${i}]} | ${JQ} -j '.latitude' ));
-      if [ "$longitude}" != "${llon}" ] && [ "${latitude}" != "${llat}" ] ; then
-        echo -n "          [${longitude},${latitude}]"
-      fi
+      local longitude=$( echo ${positions[${i}]} | ${JQ} -j '.longitude' );
+      local latitude=$( echo ${positions[${i}]} | ${JQ} -j '.latitude' );
+      echo -n "          [${longitude},${latitude}]"
       if [[ ${i} -ne $((${#positions[@]} - 1)) ]] ; then echo "," ; else echo "" ; fi 
-      llat=${latitude}
-      llon=${longitude}
     done
   fi
 
