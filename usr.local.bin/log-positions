@@ -64,7 +64,6 @@
 
 . /usr/local/bin/log.defs
 
-// processPosition($1 = POSITION line from log, $2 = yes to include heading and speed)
 processPosition() {
   local date=${1%% *}
   local value=$( sed -e 's/.*POSITION //' <<<${1} )
