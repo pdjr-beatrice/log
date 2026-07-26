@@ -70,6 +70,7 @@ LOG_POSITION_QUERY="${LOG_UPDATE_SERVER_ADDRESS}/signalk/v1/api/vessels/self/nav
 #
 LOG_POSITIONS_POSITION_PATTERN="POSITION"
 LOG_POSITIONS_ENGINE_STATE_PATTERN="Main engine STATE"
+LOG_POSITIONS_DECIMAL_PLACES=5
 
 # log-kml script defaults #############################################
 #
