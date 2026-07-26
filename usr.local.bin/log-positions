@@ -211,9 +211,9 @@ for FILENAME in ${FILESPECS} ; do
       prevlon=
       for line in "${lines[@]}" ; do
         position="$( processPosition "${line}" "${OPTION_EXTENDED}" )"
-        echo "${position}"
         lat=$( ${JQ} -j '.latitude' )
         lon=$( ${JQ} -j '.longitude' )
+        echo "${lat} ${lon}"
         if [ "${lat}" != "${prevlat}" ] || [ "${lon}" != "${prevlon}" ] ; then
           POSITIONS+=(${position})
         fi
