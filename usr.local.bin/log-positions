@@ -213,7 +213,6 @@ for FILENAME in ${FILESPECS} ; do
         position="$( processPosition "${line}" "${OPTION_EXTENDED}" )"
         lat=$( echo "${position}" | ${JQ} -j '.latitude' )
         lon=$( echo "${position}" | ${JQ} -j '.longitude' )
-        echo "${lat} ${lon}"
         if [ "${lat}" != "${prevlat}" ] || [ "${lon}" != "${prevlon}" ] ; then
           POSITIONS+=(${position})
         fi
@@ -221,7 +220,6 @@ for FILENAME in ${FILESPECS} ; do
         prevlon=${lon}
       done
       if [ ${#POSITIONS[@]} -gt 1 ] ; then POSITIONS=( "${POSITIONS[@]:1}" ) ; fi
-      echo "POSITIONS LENGTH = ${#POSITION[@]}"
       ;;
     stops)
       startPosition=
