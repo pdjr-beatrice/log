@@ -64,20 +64,21 @@
 
 . /usr/local/bin/log.defs
 
+// processPosition($1 = POSITION line from log, $2 = yes to include heading and speed)
 processPosition() {
   local date=${1%% *}
   local value=$( sed -e 's/.*POSITION //' <<<${1} )
   local lat=$(echo "${value}" | ${JQ} -j '.latitude')
   local lon=$(echo "${value}" | ${JQ} -j '.longitude')
 
-  local output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
+  local output=$( printf "{ \"latitude\": %0.${LOG_POSITIONS_POSITION_ACCURACY}f, \"longitude\": %0.${LOG_POSITIONS_POSITION_ACCURACY}f, \"date\": \"%s\" }" ${lat} ${lon} ${date} )
   if [ "${2}" == "yes" ] ; then
     if [[ $( ${JQ} -j 'has("heading")' <<< ${value} ) == true ]] ; then
       heading=$(echo "${value}" | ${JQ} -j '.heading')
-      output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${date} )
+      output=$( printf "{ \"latitude\": %0.${LOG_POSITIONS_POSITION_ACCURACY}f, \"longitude\": %0.${LOG_POSITIONS_POSITION_ACCURACY}f, \"heading\": %03.${LOG_POSITIONS_HEADING_ACCURACY}f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${date} )
       if [[ $( ${JQ} -j 'has("speedOverGround")' <<< ${value} ) == true ]] ; then
         speedOverGround=$(echo "${value}" | ${JQ} -j '.speedOverGround')
-        output=$( printf "{ \"latitude\": %0.6f, \"longitude\": %0.6f, \"heading\": %03.0f, \"speedOverGround\": %0.1f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${speedOverGround} ${date} )
+        output=$( printf "{ \"latitude\": %0.${LOG_POSITIONS_POSITION_ACCURACY}f, \"longitude\": %0.${LOG_POSITIONS_POSITION_ACCURACY}f, \"heading\": %03.${LOG_POSITIONS_HEADING_ACCURACY}f, \"speedOverGround\": %0.${LOG_POSITIONS_SOG_ACCURACY}f, \"date\": \"%s\" }" ${lat} ${lon} ${heading} ${speedOverGround} ${date} )
       fi
     fi
   fi
@@ -207,7 +208,16 @@ for FILENAME in ${FILESPECS} ; do
   case ${POSITION_TYPE} in
     positions)
       readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
-      for line in "${lines[@]}" ; do POSITIONS+=("$( processPosition "${line}" "${OPTION_EXTENDED}" )") ; done
+      prevlat=
+      prevlon=
+      for line in "${lines[@]}" ; do
+        position="$( processPosition "${line}}" "${OPTION_EXTENDED}" )"
+        lat=$( ${JQ} .latitude )
+        lon=$( ${JQ} .longitude )
+        if [ "${lat}" != "${prevlat}" ] || [ "${lon}" != "${prevlon}" ] ; then
+          POSITIONS+="${position}"
+        fi
+      done
       if [ ${#POSITIONS[@]} -gt 1 ] ; then POSITIONS=( "${POSITIONS[@]:1}" ) ; fi
       ;;
     stops)
