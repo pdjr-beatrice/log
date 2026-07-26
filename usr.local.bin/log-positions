@@ -215,7 +215,7 @@ for FILENAME in ${FILESPECS} ; do
         lat=$( echo "${position}" | ${JQ} -j '.latitude' )
         lon=$( echo "${position}" | ${JQ} -j '.longitude' )
         if [ "${lat}" != "${prevlat}" ] || [ "${lon}" != "${prevlon}" ] ; then
-          POSITIONS+=("${position"})
+          POSITIONS+=("${position}")
         fi
         prevlat=${lat}
         prevlon=${lon}
