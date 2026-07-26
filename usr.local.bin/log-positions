@@ -206,13 +206,13 @@ for FILENAME in ${FILESPECS} ; do
   LAST_POSITION=
   case ${POSITION_TYPE} in
     positions)
-      readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}" ${FILENAME} )
+      readarray -t lines <<<$( ${GREP} -h "${POSITION_PATTERN}" "${FILENAME}" )
       prevlat=
       prevlon=
       for line in "${lines[@]}" ; do
-        position="$( processPosition "${line}}" "${OPTION_EXTENDED}" )"
-        lat=$( ${JQ} .latitude )
-        lon=$( ${JQ} .longitude )
+        position="$( processPosition "${line}" "${OPTION_EXTENDED}" )"
+        lat=$( ${JQ} -j .latitude )
+        lon=$( ${JQ} -j .longitude )
         if [ "${lat}" != "${prevlat}" ] || [ "${lon}" != "${prevlon}" ] ; then
           POSITIONS+="${position}"
         fi
